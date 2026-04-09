@@ -1510,39 +1510,35 @@
 // STATE
 // =========================================================
 // =========================================================
-// 存储层：读写本地 Flask 服务（替代 localStorage）
+// 存储层：localStorage（GitHub Pages 静态版）
 // =========================================================
-const API_BASE = '';
+const STORAGE_KEY = 'jiesuan_workbench_state';
 
 let state = {
   periods: {},
   currentPeriod: null
 };
 
-// 启动时从后端异步加载 state，页面先渲染，数据到了再填充
-async function loadState() {
+function loadState() {
   try {
-    const resp = await fetch(API_BASE + '/api/state');
-    if (resp.ok) {
-      const data = await resp.json();
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
       if (data && typeof data === 'object') {
         state = { periods: {}, currentPeriod: null, ...data };
       }
     }
   } catch(e) {
-    showToast('无法连接本地服务，请确认 server.py 已启动', 'error');
+    showToast('读取本地数据失败', 'error');
   }
 }
 
-// 保存：异步 POST，失败时提示
 function saveState() {
-  fetch(API_BASE + '/api/state', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(state)
-  }).catch(() => {
-    showToast('保存失败，请确认 server.py 正在运行', 'error');
-  });
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch(e) {
+    showToast('保存失败，本地存储空间可能已满', 'error');
+  }
 }
 
 function getPeriod() {
@@ -1550,33 +1546,17 @@ function getPeriod() {
 }
 
 // =========================================================
-// INIT + SSE 实时推送
+// INIT
 // =========================================================
-(async () => {
-  await loadState();
+(() => {
+  loadState();
   refreshPeriodSelector();
   if (state.currentPeriod) {
     switchPeriod(state.currentPeriod, false);
   }
   renderAll();
   renderDashboard();
-  initSSE();
 })();
-
-// SSE：监听服务端推送，有更新自动刷新数据
-function initSSE() {
-  const es = new EventSource(API_BASE + '/api/events');
-  es.addEventListener('state_updated', async () => {
-    await loadState();
-    refreshPeriodSelector();
-    if (state.currentPeriod) switchPeriod(state.currentPeriod, false);
-    renderAll();
-    showToast('数据已更新', 'info');
-  });
-  es.onerror = () => {
-    // 断线后浏览器会自动重连，不需要手动处理
-  };
-}
 
 // =========================================================
 // FILE IMPORT
