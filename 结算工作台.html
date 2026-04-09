@@ -1,0 +1,3002 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>云账单结算工作台</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+  :root {
+    --bg: #ffffff;
+    --surface: #f5f7fa;
+    --surface2: #eef1f6;
+    --border: #dde2ec;
+    --border2: #c8cfdf;
+    --accent: #2d6fdf;
+    --accent2: #4f8ef7;
+    --green: #18a060;
+    --yellow: #c89a10;
+    --red: #d94f4f;
+    --purple: #7c5cc4;
+    --orange: #d07828;
+    --text: #1a1f2e;
+    --text2: #4a5470;
+    --text3: #8892aa;
+    --mono: 'DM Mono', monospace;
+    --sans: 'Noto Sans SC', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    min-height: 100vh;
+  }
+
+  /* ---- TOP BAR ---- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 52px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .logo {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+  }
+  .logo span { color: var(--text3); }
+  .period-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 12px;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .period-selector select {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    outline: none;
+  }
+  .period-selector select option { background: var(--surface2); }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .lock-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-family: var(--mono);
+    font-weight: 500;
+  }
+  .lock-badge.unlocked { background: rgba(245,197,66,0.12); color: var(--yellow); border: 1px solid rgba(245,197,66,0.25); }
+  .lock-badge.locked { background: rgba(61,214,140,0.12); color: var(--green); border: 1px solid rgba(61,214,140,0.25); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  /* ---- TABS ---- */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    padding: 0 24px;
+  }
+  .tab {
+    padding: 12px 20px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text3);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
+  }
+  .tab:hover { color: var(--text2); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ---- MAIN ---- */
+  .main { padding: 24px; max-width: 1400px; margin: 0 auto; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ---- SECTION ---- */
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+  }
+  .section-header:hover { background: var(--surface2); }
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: 0.04em;
+  }
+  .section-tag {
+    font-size: 10px;
+    font-family: var(--mono);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 400;
+  }
+  .tag-a { background: rgba(79,142,247,0.15); color: var(--accent2); }
+  .tag-b { background: rgba(180,142,247,0.15); color: var(--purple); }
+  .tag-c { background: rgba(247,156,79,0.15); color: var(--orange); }
+  .tag-d { background: rgba(61,214,140,0.15); color: var(--green); }
+  .section-chevron { color: var(--text3); transition: transform 0.2s; font-size: 16px; }
+  .section-chevron.open { transform: rotate(180deg); }
+  .section-body { padding: 20px; display: none; }
+  .section-body.open { display: block; }
+
+  /* ---- IMPORT ZONE ---- */
+  .import-zone {
+    border: 2px dashed var(--border2);
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .import-zone:hover { border-color: var(--accent); background: rgba(79,142,247,0.04); }
+  .import-zone.drag { border-color: var(--accent); background: rgba(79,142,247,0.08); }
+  .import-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.5; }
+  .import-text { color: var(--text2); font-size: 13px; line-height: 1.8; }
+  .import-text strong { color: var(--accent); }
+  .import-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .stat-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .stat-label { font-size: 11px; color: var(--text3); margin-bottom: 6px; font-family: var(--mono); }
+  .stat-value { font-size: 20px; font-weight: 700; color: var(--text); font-family: var(--mono); }
+  .stat-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  /* ---- ALLOC TABLE ---- */
+  .alloc-table { width: 100%; border-collapse: collapse; }
+  .alloc-table th {
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--mono);
+    font-weight: 400;
+    border-bottom: 1px solid var(--border);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .alloc-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 12px;
+    vertical-align: middle;
+  }
+  .alloc-table tr:last-child td { border-bottom: none; }
+  .alloc-table tr:hover td { background: var(--surface2); }
+  .period-label {
+    color: var(--accent2);
+    font-weight: 500;
+  }
+  .gpu-label {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    background: rgba(180,142,247,0.12);
+    color: var(--purple);
+  }
+  .ratio-input-wrap { display: flex; align-items: center; gap: 8px; }
+  .ratio-input {
+    width: 70px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 5px;
+    padding: 5px 8px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    text-align: right;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .ratio-input:focus { border-color: var(--accent); }
+  .ratio-complement { color: var(--text3); font-size: 12px; min-width: 90px; }
+  .ratio-bar { height: 4px; border-radius: 2px; background: var(--border2); overflow: hidden; width: 100px; }
+  .ratio-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--purple)); border-radius: 2px; transition: width 0.3s; }
+
+  /* ---- FILTER BUILDER ---- */
+  .filter-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+  .filter-select, .filter-input {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 5px;
+    padding: 6px 10px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .filter-select:focus, .filter-input:focus { border-color: var(--accent); }
+  .filter-select { min-width: 150px; }
+  .filter-input { min-width: 200px; }
+  .filter-input::placeholder { color: var(--text3); }
+
+  /* ---- BUTTONS ---- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    font-family: var(--sans);
+    letter-spacing: 0.02em;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #6aa0f8; }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border2);
+  }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: rgba(247,111,111,0.12); color: var(--red); border: 1px solid rgba(247,111,111,0.25); }
+  .btn-danger:hover { background: rgba(247,111,111,0.2); }
+  .btn-success { background: rgba(61,214,140,0.12); color: var(--green); border: 1px solid rgba(61,214,140,0.25); }
+  .btn-success:hover { background: rgba(61,214,140,0.2); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-lock {
+    background: linear-gradient(135deg, #f5c542, #f79c4f);
+    color: #0f1117;
+    font-weight: 700;
+    padding: 9px 24px;
+    font-size: 13px;
+  }
+  .btn-lock:hover { filter: brightness(1.1); }
+
+  /* ---- SPECIAL TAG RESULT ---- */
+  .special-tag-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .special-tag-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+  }
+  .special-tag-info { display: flex; flex-direction: column; gap: 3px; }
+  .special-tag-name { font-size: 12px; font-weight: 500; color: var(--orange); }
+  .special-tag-desc { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+  .special-tag-count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    background: var(--surface);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  /* ---- INCREMENTAL ---- */
+  .tab-sub {
+    display: flex;
+    gap: 0;
+    margin-bottom: 16px;
+    background: var(--surface2);
+    border-radius: 6px;
+    padding: 3px;
+    width: fit-content;
+  }
+  .tab-sub-item {
+    padding: 6px 16px;
+    font-size: 12px;
+    color: var(--text3);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+  .tab-sub-item.active { background: var(--surface); color: var(--text); }
+  .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+  .form-field label {
+    display: block;
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--mono);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .form-field input, .form-field select, .form-field textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 5px;
+    padding: 7px 10px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-field input:focus, .form-field select:focus, .form-field textarea:focus { border-color: var(--accent); }
+  .form-field textarea { resize: vertical; min-height: 80px; }
+  .paste-area {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 12px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+    min-height: 120px;
+    resize: vertical;
+    outline: none;
+    line-height: 1.6;
+  }
+  .paste-area:focus { border-color: var(--accent); }
+  .paste-area::placeholder { color: var(--text3); }
+
+  /* ---- LOCK ZONE ---- */
+  .lock-zone {
+    border: 1px solid rgba(245,197,66,0.2);
+    background: rgba(245,197,66,0.04);
+    border-radius: 10px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+  }
+  .lock-zone-info { display: flex; flex-direction: column; gap: 4px; }
+  .lock-zone-title { font-size: 13px; font-weight: 500; color: var(--yellow); }
+  .lock-zone-desc { font-size: 11px; color: var(--text3); line-height: 1.6; }
+  .lock-readonly {
+    border: 1px solid rgba(61,214,140,0.2);
+    background: rgba(61,214,140,0.04);
+    border-radius: 10px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 8px;
+  }
+  .lock-icon { font-size: 28px; }
+  .lock-readonly-info { display: flex; flex-direction: column; gap: 4px; }
+  .lock-readonly-title { font-size: 13px; font-weight: 500; color: var(--green); }
+  .lock-readonly-desc { font-size: 11px; color: var(--text3); }
+
+  /* ---- DASHBOARD ---- */
+  .dash-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .kpi-card.blue::before { background: var(--accent); }
+  .kpi-card.green::before { background: var(--green); }
+  .kpi-card.purple::before { background: var(--purple); }
+  .kpi-card.orange::before { background: var(--orange); }
+  .kpi-label { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .kpi-value { font-size: 22px; font-weight: 700; font-family: var(--mono); color: var(--text); }
+  .kpi-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+  .kpi-trend { font-size: 11px; margin-top: 6px; }
+  .kpi-trend.up { color: var(--red); }
+  .kpi-trend.down { color: var(--green); }
+
+  .breakdown-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 20px; }
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .chart-title { font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 16px; letter-spacing: 0.04em; }
+
+  /* Category breakdown bars */
+  .cat-list { display: flex; flex-direction: column; gap: 12px; }
+  .cat-row { display: flex; flex-direction: column; gap: 5px; }
+  .cat-row-header { display: flex; justify-content: space-between; align-items: center; }
+  .cat-name { font-size: 12px; color: var(--text2); font-family: var(--mono); }
+  .cat-amount { font-size: 12px; font-family: var(--mono); font-weight: 500; }
+  .cat-bar-bg { height: 5px; background: var(--border2); border-radius: 3px; overflow: hidden; }
+  .cat-bar-fill { height: 100%; border-radius: 3px; }
+
+  /* Provider table */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th {
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--mono);
+    font-weight: 400;
+    border-bottom: 1px solid var(--border);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  .data-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: var(--surface2); }
+  .data-table .num { text-align: right; color: var(--text); }
+  .data-table .highlight { color: var(--accent2); font-weight: 500; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-family: var(--mono);
+    font-weight: 500;
+  }
+  .badge-agi { background: rgba(79,142,247,0.15); color: var(--accent2); }
+  .badge-common { background: rgba(136,146,170,0.15); color: var(--text3); }
+  .badge-red { background: rgba(247,111,111,0.15); color: var(--red); }
+  .badge-special { background: rgba(247,156,79,0.15); color: var(--orange); }
+  .badge-locked { background: rgba(61,214,140,0.12); color: var(--green); }
+  .badge-draft { background: rgba(245,197,66,0.12); color: var(--yellow); }
+
+  /* ---- DETAIL TAB ---- */
+  .filter-bar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+  .detail-table { width: 100%; border-collapse: collapse; min-width: 900px; }
+  .detail-table th {
+    text-align: left;
+    padding: 9px 12px;
+    font-size: 10px;
+    color: var(--text3);
+    font-family: var(--mono);
+    font-weight: 400;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+  }
+  .detail-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+  .detail-table tr:last-child td { border-bottom: none; }
+  .detail-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .adjusted-marker { color: var(--yellow); font-size: 10px; margin-left: 4px; }
+  .incremental-marker { color: var(--green); font-size: 10px; margin-left: 4px; }
+  .special-marker { color: var(--orange); font-size: 10px; margin-left: 4px; }
+
+  /* ---- HISTORY TAB ---- */
+  .history-chart { margin-bottom: 20px; }
+  .history-bars { display: flex; align-items: flex-end; gap: 8px; height: 160px; padding: 0 4px; }
+  .h-bar-group { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
+  .h-bar-stacks { display: flex; gap: 3px; align-items: flex-end; height: 140px; }
+  .h-bar {
+    width: 24px;
+    border-radius: 3px 3px 0 0;
+    min-height: 4px;
+    transition: opacity 0.2s;
+  }
+  .h-bar:hover { opacity: 0.8; }
+  .h-bar-label { font-size: 10px; color: var(--text3); font-family: var(--mono); }
+  .h-legend { display: flex; gap: 16px; margin-top: 12px; }
+  .h-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text3); font-family: var(--mono); }
+  .h-legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+  /* ---- EMPTY STATE ---- */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text3);
+  }
+  .empty-icon { font-size: 40px; opacity: 0.3; margin-bottom: 12px; }
+  .empty-text { font-size: 13px; line-height: 1.8; }
+
+  /* ---- MISC ---- */
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+  .flex { display: flex; }
+  .gap-8 { gap: 8px; }
+  .gap-12 { gap: 12px; }
+  .mt-12 { margin-top: 12px; }
+  .mt-16 { margin-top: 16px; }
+  .hint { font-size: 11px; color: var(--text3); line-height: 1.7; }
+  .text-mono { font-family: var(--mono); }
+  .text-accent { color: var(--accent2); }
+  .text-green { color: var(--green); }
+  .text-yellow { color: var(--yellow); }
+  .text-orange { color: var(--orange); }
+
+  input[type="file"] { display: none; }
+
+  /* ---- MODAL ---- */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 28px;
+    max-width: 440px;
+    width: 90%;
+  }
+  .modal-title { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+  .modal-desc { font-size: 12px; color: var(--text3); line-height: 1.8; margin-bottom: 20px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+  /* ---- TOAST ---- */
+  .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 300; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 12px 18px;
+    font-size: 12px;
+    font-family: var(--mono);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slideIn 0.3s ease;
+    min-width: 260px;
+  }
+  .toast.success { border-left: 3px solid var(--green); }
+  .toast.error { border-left: 3px solid var(--red); }
+  .toast.info { border-left: 3px solid var(--accent); }
+  @keyframes slideIn { from { transform: translateX(60px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  /* ---- REAL COUPON TABLE ---- */
+  .rc-table { width: 100%; border-collapse: collapse; }
+  .rc-table th {
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 10px;
+    color: var(--text3);
+    font-family: var(--mono);
+    font-weight: 400;
+    border-bottom: 1px solid var(--border);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+  .rc-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+  }
+  .rc-table tr:last-child td { border-bottom: none; }
+  .rc-input {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 4px 8px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+    width: 120px;
+    outline: none;
+  }
+  .rc-input:focus { border-color: var(--accent); }
+  .rc-orig { color: var(--text3); text-decoration: line-through; font-size: 10px; }
+
+  /* ---- PIVOT TABLE ---- */
+  .pivot-wrap { overflow-x: auto; }
+  .pivot-table { width: 100%; border-collapse: collapse; min-width: 820px; }
+  .pivot-table th {
+    text-align: left; padding: 8px 12px;
+    font-size: 11px; color: var(--text3); font-family: var(--mono);
+    font-weight: 400; border-bottom: 1px solid var(--border);
+    text-transform: uppercase; letter-spacing: 0.07em; white-space: nowrap;
+  }
+  .pivot-table th.num { text-align: right; }
+  .pivot-table td {
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+    font-family: var(--mono); font-size: 12px; vertical-align: middle;
+  }
+  .pivot-table tr:last-child td { border-bottom: none; }
+  .pivot-table td.num { text-align: right; color: var(--text); }
+  .pivot-table td.dim { color: var(--text2); }
+  .pivot-row-l0 td.dim { color: var(--text); font-weight: 500; background: rgba(255,255,255,0.03); }
+  .pivot-row-l1 td.dim { padding-left: 28px; }
+  .pivot-row-l2 td.dim { padding-left: 48px; color: var(--text3); }
+  .pivot-row-l3 td.dim { padding-left: 68px; color: var(--text3); font-size: 11px; }
+  .pivot-row-l4 td.dim { padding-left: 88px; color: var(--text3); font-size: 11px; }
+  .pivot-row-l5 td.dim { padding-left: 108px; color: var(--text3); font-size: 11px; }
+  .pivot-toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+  .pivot-toggle .toggle-icon { display: inline-block; width: 14px; text-align: center; font-size: 10px; color: var(--text3); transition: transform 0.15s; }
+  .pivot-toggle.collapsed .toggle-icon { transform: rotate(-90deg); }
+  .pivot-row-hidden { display: none; }
+  .pivot-row-total td { border-top: 1px solid var(--border2); font-weight: 500; }
+  .pivot-row-total td.dim { color: var(--text); }
+
+  /* ---- GM VARIANCE MODULE ---- */
+  .gm-sub { display: none; }
+  .gm-sub.active { display: block; }
+  .gm-input-cell input[type=number], .gm-input-cell input[type=text] {
+    background: transparent; border: none; color: var(--text);
+    font-family: var(--mono); font-size: 11px; width: 100%; outline: none; text-align: right; padding: 2px 4px;
+  }
+  .gm-input-cell input[type=text] { text-align: left; }
+  .gm-input-cell input:focus { background: rgba(79,142,247,0.08); border-radius: 3px; }
+  .gm-input-cell select {
+    background: var(--surface2); border: 1px solid var(--border2); color: var(--text);
+    font-family: var(--mono); font-size: 11px; border-radius: 4px; padding: 2px 6px; outline: none; cursor: pointer;
+  }
+  .gm-input-cell select:focus { border-color: var(--accent); }
+  .gm-del-btn { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 15px; padding: 2px 5px; border-radius: 3px; }
+  .gm-del-btn:hover { color: var(--red); }
+  .gm-bridge-row { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .gm-bridge-row:last-child { border-bottom: none; }
+  .gm-bridge-label { width: 200px; color: var(--text); flex-shrink: 0; }
+  .gm-bridge-hint { flex: 1; font-size: 11px; color: var(--text3); font-family: var(--mono); }
+  .gm-bridge-bar-wrap { width: 180px; height: 14px; position: relative; background: var(--surface2); border-radius: 3px; overflow: hidden; flex-shrink: 0; }
+  .gm-bridge-bar { height: 100%; border-radius: 3px; }
+  .gm-bridge-val { width: 90px; text-align: right; font-family: var(--mono); font-size: 12px; font-weight: 500; flex-shrink: 0; }
+  .gm-bridge-pct { width: 55px; text-align: right; font-size: 11px; color: var(--text3); font-family: var(--mono); flex-shrink: 0; }
+  .gm-bridge-base { background: rgba(79,142,247,0.06); }
+  .gm-bridge-total { background: rgba(61,214,140,0.05); }
+  .gm-tag-nv { display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-family:var(--mono);background:rgba(61,214,140,0.12);color:var(--green); }
+  .gm-tag-dom { display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-family:var(--mono);background:rgba(247,156,79,0.12);color:var(--orange); }
+  .gm-tag-hi { display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-family:var(--mono);background:rgba(79,142,247,0.12);color:var(--accent2); }
+  .gm-tag-mid { display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-family:var(--mono);background:rgba(180,142,247,0.12);color:var(--purple); }
+  .gm-tag-lo { display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-family:var(--mono);background:rgba(136,146,170,0.12);color:var(--text3); }
+  .gm-check-ok { font-size:11px;color:var(--green);font-family:var(--mono);padding:6px 12px;background:rgba(61,214,140,0.08);border-radius:5px;border:1px solid rgba(61,214,140,0.2);display:inline-flex;align-items:center;gap:6px; }
+  .gm-check-err { font-size:11px;color:var(--red);font-family:var(--mono);padding:6px 12px;background:rgba(247,111,111,0.08);border-radius:5px;border:1px solid rgba(247,111,111,0.2);display:inline-flex;align-items:center;gap:6px; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">SETTLEMENT<span>/</span>WORKBENCH</div>
+    <div class="period-selector">
+      <span>账期</span>
+      <select id="periodSelect" onchange="switchPeriod(this.value)">
+        <option value="">-- 请选择 --</option>
+      </select>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="lock-badge unlocked" id="lockBadge">
+      <div class="dot"></div>
+      <span id="lockBadgeText">草稿</span>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('dashboard')">汇总看板</div>
+  <div class="tab" onclick="switchTab('gmvariance')">成本分析</div>
+  <div class="tab" onclick="switchTab('detail')">明细查询</div>
+  <div class="tab" onclick="switchTab('import')">导入 &amp; 调整</div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- ======== TAB: 导入&调整 ======== -->
+  <div class="panel" id="panel-import">
+
+    <!-- 数据导入 -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-title">
+          <span>01</span>
+          <span>数据导入</span>
+          <span class="section-tag tag-a">IMPORT</span>
+        </div>
+        <div class="section-chevron open">&#8964;</div>
+      </div>
+      <div class="section-body open">
+        <div class="import-zone" id="importZone" onclick="document.getElementById('fileInput').click()"
+             ondragover="event.preventDefault();this.classList.add('drag')"
+             ondragleave="this.classList.remove('drag')"
+             ondrop="handleDrop(event)">
+          <div class="import-icon">&#128196;</div>
+          <div class="import-text">
+            点击上传或拖拽 <strong>output_final.xlsx</strong> 至此处<br>
+            自动解析明细数据和阿里云AGI清单两个 sheet
+          </div>
+        </div>
+        <input type="file" id="fileInput" accept=".xlsx" onchange="handleFileSelect(event)">
+        <div class="import-stats" id="importStats" style="display:none">
+          <div class="stat-card">
+            <div class="stat-label">账期</div>
+            <div class="stat-value text-accent" id="statPeriod">--</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">明细数据</div>
+            <div class="stat-value" id="statMainRows">--</div>
+            <div class="stat-sub">行</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">阿里云清单</div>
+            <div class="stat-value" id="statAliRows">--</div>
+            <div class="stat-sub">行</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">导入时间</div>
+            <div class="stat-value text-mono" id="statTime" style="font-size:13px">--</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- A: 分摊比例 -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-title">
+          <span>02</span>
+          <span>H20 / H20-2 / L20 分摊比例</span>
+          <span class="section-tag tag-a">A</span>
+        </div>
+        <div class="section-chevron">&#8964;</div>
+      </div>
+      <div class="section-body">
+        <p class="hint" style="margin-bottom:14px">按账期设置每种 GPU 机型的 AGI 占比，剩余自动归入常规。锁定前可修改，锁定后只读。</p>
+        <table class="alloc-table" id="allocTable">
+          <thead>
+            <tr>
+              <th>账期</th>
+              <th>GPU 机型</th>
+              <th>AGI 占比 (%)</th>
+              <th>常规占比</th>
+              <th>可视化</th>
+            </tr>
+          </thead>
+          <tbody id="allocBody">
+            <tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px">请先导入数据</td></tr>
+          </tbody>
+        </table>
+        <div class="mt-12 flex gap-8">
+          <button class="btn btn-primary" onclick="saveAlloc()" id="btnSaveAlloc">保存比例设置</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- B: real_coupon 调整 -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-title">
+          <span>03</span>
+          <span>阿里云 Real Coupon 调整</span>
+          <span class="section-tag tag-b">B</span>
+        </div>
+        <div class="section-chevron">&#8964;</div>
+      </div>
+      <div class="section-body">
+        <p class="hint" style="margin-bottom:14px">对阿里云AGI清单中的 real_coupon_amount_cny 进行行级覆盖，调整金额 = 台数 × 调整单价。</p>
+        <div class="filter-bar">
+          <select class="filter-select" id="rcGpuFilter" onchange="renderRCTable()">
+            <option value="">全部机型</option>
+            <option value="H800">H800</option>
+            <option value="H200">H200</option>
+            <option value="H100">H100</option>
+            <option value="H20">H20</option>
+            <option value="H20-2">H20-2</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table class="rc-table" id="rcTable">
+            <thead>
+              <tr>
+                <th>GPU机型</th>
+                <th>账单类型</th>
+                <th>优惠后金额</th>
+                <th>real_coupon 原始值</th>
+                <th>台数</th>
+                <th>调整单价</th>
+                <th>调整金额</th>
+              </tr>
+            </thead>
+            <tbody id="rcBody">
+              <tr><td colspan="7" style="text-align:center;color:var(--text3);padding:24px">请先导入数据</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="mt-12 flex gap-8">
+          <button class="btn btn-primary" onclick="saveRCAdj()" id="btnSaveRC">保存调整</button>
+          <button class="btn btn-ghost" onclick="clearRCAdj()">清除本次调整</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- C: 归属特别处理 -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-title">
+          <span>04</span>
+          <span>归属特别处理</span>
+          <span class="section-tag tag-c">C</span>
+        </div>
+        <div class="section-chevron">&#8964;</div>
+      </div>
+      <div class="section-body">
+        <p class="hint" style="margin-bottom:14px">通过条件批量筛选出特定行，打上「特殊」标签，在汇总时单独展示。不修改原始数据。</p>
+
+        <div id="specialTagGroups">
+          <div class="hint" style="text-align:center;padding:20px">暂无特别处理规则，点击下方添加</div>
+        </div>
+
+        <div class="mt-12" id="addSpecialForm" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;display:none">
+          <p style="font-size:12px;font-weight:500;margin-bottom:12px;color:var(--text)">新建特别处理规则</p>
+          <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+            <div class="form-field">
+              <label>规则名称</label>
+              <input type="text" id="specialName" placeholder="如：某项目特别摊销">
+            </div>
+            <div class="form-field">
+              <label>备注说明</label>
+              <input type="text" id="specialRemark" placeholder="可选">
+            </div>
+          </div>
+          <p style="font-size:11px;color:var(--text3);margin-bottom:10px;">筛选条件（多条件为 AND 关系）</p>
+          <div id="conditionRows">
+            <div class="filter-row condition-row">
+              <select class="filter-select" style="min-width:160px">
+                <option value="provider">供应商 provider</option>
+                <option value="account_name">账号 account_name</option>
+                <option value="entity">法人主体 entity</option>
+                <option value="分类">分类</option>
+                <option value="owner">owner</option>
+                <option value="level1">level1</option>
+                <option value="level2">level2</option>
+                <option value="scene">scene</option>
+                <option value="billing_period">账期</option>
+              </select>
+              <select class="filter-select" style="min-width:100px">
+                <option value="eq">等于</option>
+                <option value="contains">包含</option>
+                <option value="neq">不等于</option>
+              </select>
+              <input class="filter-input" placeholder="值..." style="min-width:160px">
+              <button class="btn btn-ghost" onclick="addConditionRow()">+ 添加条件</button>
+            </div>
+          </div>
+          <div class="mt-12 flex gap-8">
+            <button class="btn btn-primary" onclick="applySpecialTag()">应用规则</button>
+            <button class="btn btn-ghost" onclick="document.getElementById('addSpecialForm').style.display='none'">取消</button>
+          </div>
+        </div>
+
+        <div class="mt-12 flex gap-8">
+          <button class="btn btn-ghost" onclick="document.getElementById('addSpecialForm').style.display='block'" id="btnAddSpecial">+ 新增特别处理规则</button>
+        </div>
+        <div class="special-tag-list" id="specialTagList"></div>
+      </div>
+    </div>
+
+    <!-- D/E: 增量数据 -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-title">
+          <span>05</span>
+          <span>增量数据</span>
+          <span class="section-tag tag-d">D / E</span>
+        </div>
+        <div class="section-chevron">&#8964;</div>
+      </div>
+      <div class="section-body">
+        <div class="tab-sub">
+          <div class="tab-sub-item active" onclick="switchSubTab(this,'manual')">手工录入</div>
+          <div class="tab-sub-item" onclick="switchSubTab(this,'paste')">粘贴导入</div>
+        </div>
+
+        <div id="subManual">
+          <div class="form-grid">
+            <div class="form-field">
+              <label>账期 *</label>
+              <select id="incPeriod">
+                <option value="">-- 选择账期 --</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>供应商 *</label>
+              <input type="text" id="incProvider" placeholder="如：阿里云">
+            </div>
+            <div class="form-field">
+              <label>分类 *</label>
+              <select id="incClass">
+                <option value="常规">常规</option>
+                <option value="AGI">AGI</option>
+                <option value="Rednote">Rednote</option>
+                <option value="特殊">特殊</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>accrual_base_cny *</label>
+              <input type="number" id="incAccrual" placeholder="0.00">
+            </div>
+            <div class="form-field">
+              <label>cash_base_cny *</label>
+              <input type="number" id="incCash" placeholder="0.00">
+            </div>
+            <div class="form-field">
+              <label>accrual_base_without_tax_cny</label>
+              <input type="number" id="incAccrualTax" placeholder="自动计算或手填">
+            </div>
+          </div>
+          <div class="form-field" style="max-width:400px">
+            <label>备注说明 *</label>
+            <input type="text" id="incRemark" placeholder="说明增量数据来源和用途">
+          </div>
+          <div class="mt-12">
+            <button class="btn btn-primary" onclick="addManualInc()">+ 添加记录</button>
+          </div>
+        </div>
+
+        <div id="subPaste" style="display:none">
+          <p class="hint" style="margin-bottom:10px">从 Excel 复制数据后粘贴至下方。第一行须为字段名，必须包含：账期、分类、accrual_base_cny、cash_base_cny、备注。</p>
+          <textarea class="paste-area" id="pasteArea" placeholder="从 Excel 粘贴数据至此处（Tab 分隔格式）..."></textarea>
+          <div class="mt-12 flex gap-8">
+            <button class="btn btn-primary" onclick="parsePaste()">解析并导入</button>
+            <button class="btn btn-ghost" onclick="document.getElementById('pasteArea').value=''">清空</button>
+          </div>
+        </div>
+
+        <div id="incList" style="margin-top:16px"></div>
+      </div>
+    </div>
+
+    <!-- 锁定 -->
+    <div id="lockSection">
+      <div class="lock-zone" id="lockZoneUnlocked">
+        <div class="lock-zone-info">
+          <div class="lock-zone-title">&#128274; 锁定结账</div>
+          <div class="lock-zone-desc">
+            锁定后当前账期数据冻结，所有调整记录存档，不允许修改。<br>
+            请确认以上所有调整已完成后再执行锁定。
+          </div>
+        </div>
+        <button class="btn btn-lock" onclick="showLockModal()">确认锁定</button>
+      </div>
+      <div class="lock-readonly" id="lockZoneLocked" style="display:none">
+        <div class="lock-icon">&#128275;</div>
+        <div class="lock-readonly-info">
+          <div class="lock-readonly-title">已锁定</div>
+          <div class="lock-readonly-desc" id="lockReadonlyDesc">该账期数据已于 -- 锁定，不允许修改。</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ======== TAB: 汇总看板 ======== -->
+  <div class="panel active" id="panel-dashboard">
+    <div id="dashEmpty" class="empty-state">
+      <div class="empty-icon">&#128202;</div>
+      <div class="empty-text">请先导入数据后查看汇总看板</div>
+    </div>
+    <div id="dashContent" style="display:none">
+
+      <!-- KPI Row 1: 应计基数（含税） -->
+      <div class="dash-grid">
+        <div class="kpi-card blue" style="grid-column:span 1">
+          <div class="kpi-label">应计基数（含税）</div>
+          <div class="kpi-value" id="kpiAccrual">--</div>
+          <div class="kpi-sub">万元 CNY</div>
+        </div>
+        <div class="kpi-card blue" style="grid-column:span 3;opacity:0.85">
+          <div class="kpi-label" style="margin-bottom:10px">分类汇总 · 应计基数（含税）</div>
+          <div class="cat-list" id="catListAccrual"></div>
+        </div>
+      </div>
+
+      <!-- KPI Row 2: 应计基数（不含税） -->
+      <div class="dash-grid" style="margin-top:12px">
+        <div class="kpi-card purple" style="grid-column:span 1">
+          <div class="kpi-label">应计基数（不含税）</div>
+          <div class="kpi-value" id="kpiAccrualTax">--</div>
+          <div class="kpi-sub">万元 CNY</div>
+        </div>
+        <div class="kpi-card purple" style="grid-column:span 3;opacity:0.85">
+          <div class="kpi-label" style="margin-bottom:10px">分类汇总 · 应计基数（不含税）</div>
+          <div class="cat-list" id="catListAccrualTax"></div>
+        </div>
+      </div>
+
+
+
+      <!-- 分类明细：常规 / AGI / Rednote / ITcost -->
+      <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+
+        <!-- 常规 -->
+        <div class="chart-card">
+          <div class="chart-title" style="display:flex;justify-content:space-between">
+            <span>常规</span>
+            <span id="clsTotal-regular" style="font-family:var(--mono);font-size:12px;color:var(--accent2)"></span>
+          </div>
+          <table class="data-table" id="clsTable-regular">
+            <thead><tr><th>供应商 · 产品</th><th style="text-align:right">应计基数</th><th style="text-align:right">占比</th></tr></thead>
+            <tbody id="clsBody-regular"></tbody>
+          </table>
+        </div>
+
+        <!-- AGI -->
+        <div class="chart-card">
+          <div class="chart-title" style="display:flex;justify-content:space-between">
+            <span>AGI</span>
+            <span id="clsTotal-agi" style="font-family:var(--mono);font-size:12px;color:var(--purple)"></span>
+          </div>
+          <table class="data-table" id="clsTable-agi">
+            <thead><tr><th>供应商 · 产品</th><th style="text-align:right">应计基数</th><th style="text-align:right">占比</th></tr></thead>
+            <tbody id="clsBody-agi"></tbody>
+          </table>
+        </div>
+
+        <!-- Rednote -->
+        <div class="chart-card">
+          <div class="chart-title" style="display:flex;justify-content:space-between">
+            <span>Rednote</span>
+            <span id="clsTotal-rednote" style="font-family:var(--mono);font-size:12px;color:var(--red)"></span>
+          </div>
+          <table class="data-table" id="clsTable-rednote">
+            <thead><tr><th>供应商 · 产品</th><th style="text-align:right">应计基数</th><th style="text-align:right">占比</th></tr></thead>
+            <tbody id="clsBody-rednote"></tbody>
+          </table>
+        </div>
+
+        <!-- ITcost -->
+        <div class="chart-card">
+          <div class="chart-title" style="display:flex;justify-content:space-between">
+            <span>IT费用</span>
+            <span id="clsTotal-itcost" style="font-family:var(--mono);font-size:12px;color:var(--orange)"></span>
+          </div>
+          <table class="data-table" id="clsTable-itcost">
+            <thead><tr><th>供应商 · 产品</th><th style="text-align:right">应计基数</th><th style="text-align:right">占比</th></tr></thead>
+            <tbody id="clsBody-itcost"></tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <!-- AGI GPU明细 & 增量特殊 -->
+      <div class="breakdown-grid" style="margin-top:12px">
+        <div class="chart-card">
+          <div class="chart-title">AGI · GPU机型明细</div>
+          <table class="data-table" id="gpuTable">
+            <thead>
+              <tr>
+                <th>GPU机型</th><th>类型</th>
+                <th style="text-align:right">原始应计</th>
+                <th style="text-align:right">分摊比例</th>
+                <th style="text-align:right">AGI应计</th>
+                <th style="text-align:right">常规应计</th>
+                <th>来源</th>
+              </tr>
+            </thead>
+            <tbody id="gpuBody"></tbody>
+          </table>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">特殊 & 增量数据</div>
+          <table class="data-table">
+            <thead><tr><th>分类/规则</th><th style="text-align:right">条数</th><th style="text-align:right">应计基数</th></tr></thead>
+            <tbody id="specialIncBody"><tr><td colspan="3" style="text-align:center;color:var(--text3);padding:16px">无数据</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======== TAB: 明细查询 ======== -->
+  <div class="panel" id="panel-detail">
+
+    <!-- 明细页子tab -->
+    <div class="tab-sub" style="margin:0 0 0 0;border-bottom:1px solid var(--border);padding:0 24px;background:var(--surface);">
+      <div class="tab-sub-item active" onclick="switchDetailSubTab(this,'detail-rows')" style="padding:10px 16px">明细行</div>
+      <div class="tab-sub-item" onclick="switchDetailSubTab(this,'detail-pivot')" style="padding:10px 16px">明细分类</div>
+    </div>
+
+    <!-- 子面板：明细行（原有） -->
+    <div id="detail-rows" style="display:block">
+      <div class="filter-bar">
+        <select class="filter-select" id="detailPeriod" onchange="renderDetail()">
+          <option value="">全部账期</option>
+        </select>
+        <select class="filter-select" id="detailClass" onchange="renderDetail()">
+          <option value="">全部分类</option>
+          <option value="常规">常规</option>
+          <option value="AGI">AGI</option>
+          <option value="Rednote">Rednote</option>
+          <option value="特殊">特殊</option>
+        </select>
+        <select class="filter-select" id="detailProvider" onchange="renderDetail()">
+          <option value="">全部供应商</option>
+        </select>
+        <input class="filter-input" id="detailSearch" placeholder="搜索账号/产品..." oninput="renderDetail()">
+        <span id="detailCount" style="font-size:11px;color:var(--text3);font-family:var(--mono)"></span>
+      </div>
+      <div class="table-wrap">
+        <table class="detail-table">
+          <thead>
+            <tr>
+              <th>账期</th>
+              <th>供应商</th>
+              <th>账号</th>
+              <th>产品</th>
+              <th>分类</th>
+              <th>类型</th>
+              <th>型号</th>
+              <th style="text-align:right">accrual_base</th>
+              <th style="text-align:right">cash_base</th>
+              <th>标注</th>
+            </tr>
+          </thead>
+          <tbody id="detailBody">
+            <tr><td colspan="10" style="text-align:center;color:var(--text3);padding:40px">请先导入数据</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 子面板：明细分类（P001 三block透视） -->
+    <div id="detail-pivot" style="display:none;padding:20px 24px">
+
+      <!-- 账期筛选 -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <select class="filter-select" id="pivotPeriod" onchange="renderPivot()">
+          <option value="">全部账期</option>
+        </select>
+        <span style="font-size:11px;color:var(--text3);font-family:var(--mono)" id="pivotMeta"></span>
+      </div>
+
+      <!-- Block 1: 常规（含ITcost） -->
+      <div class="section" style="margin-bottom:16px">
+        <div class="section-header" onclick="toggleSection(this)">
+          <div class="section-title">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:4px"></span>
+            常规
+            <span class="section-tag tag-a" id="pivot-regular-total">--</span>
+          </div>
+          <span class="section-chevron open">&#8964;</span>
+        </div>
+        <div class="section-body open" style="padding:0">
+          <div class="pivot-wrap" id="pivot-regular">
+            <div style="text-align:center;color:var(--text3);padding:32px;font-size:12px">请先导入数据</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Block 2: AGI -->
+      <div class="section" style="margin-bottom:16px">
+        <div class="section-header" onclick="toggleSection(this)">
+          <div class="section-title">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--purple);margin-right:4px"></span>
+            AGI
+            <span class="section-tag tag-b" id="pivot-agi-total">--</span>
+          </div>
+          <span class="section-chevron open">&#8964;</span>
+        </div>
+        <div class="section-body open" style="padding:0">
+          <div class="pivot-wrap" id="pivot-agi">
+            <div style="text-align:center;color:var(--text3);padding:32px;font-size:12px">请先导入数据</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Block 3: Rednote -->
+      <div class="section" style="margin-bottom:16px">
+        <div class="section-header" onclick="toggleSection(this)">
+          <div class="section-title">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);margin-right:4px"></span>
+            Rednote
+            <span class="section-tag tag-c" id="pivot-rednote-total">--</span>
+          </div>
+          <span class="section-chevron open">&#8964;</span>
+        </div>
+        <div class="section-body open" style="padding:0">
+          <div class="pivot-wrap" id="pivot-rednote">
+            <div style="text-align:center;color:var(--text3);padding:32px;font-size:12px">请先导入数据</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======== TAB: GM 毛利分析 ======== -->
+  <div class="panel" id="panel-gmvariance">
+
+    <!-- 子导航 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div class="tab-sub" id="gmSubTabs">
+        <div class="tab-sub-item active" onclick="gmSwitchSub(this,'gm-input')">数据输入</div>
+        <div class="tab-sub-item" onclick="gmSwitchSub(this,'gm-bridge')">GM Bridge</div>
+        <div class="tab-sub-item" onclick="gmSwitchSub(this,'gm-waterfall')">瀑布图</div>
+        <div class="tab-sub-item" onclick="gmSwitchSub(this,'gm-segment')">分部拆解</div>
+        <div class="tab-sub-item" onclick="gmSwitchSub(this,'gm-formula')">公式说明</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" style="font-size:11px;" onclick="gmExportCSV()">导出 CSV</button>
+        <button class="btn btn-primary" onclick="gmRunAnalysis()">运行分析</button>
+      </div>
+    </div>
+
+    <!-- SUB: 数据输入 -->
+    <div id="gm-input" class="gm-sub active">
+      <div class="section" style="overflow:visible;">
+        <div class="section-header" onclick="toggleSection(this)">
+          <div class="section-title">
+            <span>GPU SKU 列表</span>
+            <span class="section-tag tag-b">PVM DATA</span>
+          </div>
+          <div class="section-chevron open">&#8964;</div>
+        </div>
+        <div class="section-body open">
+          <div style="display:flex;gap:8px;margin-bottom:14px;">
+            <button class="btn btn-ghost" style="font-size:11px;" onclick="gmAddRow()">+ 添加行</button>
+            <button class="btn btn-ghost" style="font-size:11px;" onclick="document.getElementById('gmFileInput').click()">导入 CSV</button>
+            <button class="btn btn-danger" style="font-size:11px;" onclick="gmClearAll()">清空</button>
+            <button class="btn btn-ghost" style="font-size:11px;" onclick="gmLoadDefaults()">加载示例数据</button>
+            <span style="font-size:11px;color:var(--text3);align-self:center;">价格 / 成本单位: 万元 / K件</span>
+          </div>
+          <input type="file" id="gmFileInput" accept=".csv" onchange="gmHandleFile(this)">
+          <div class="table-wrap">
+            <table class="detail-table" style="min-width:860px;">
+              <thead>
+                <tr>
+                  <th style="width:130px;">型号</th>
+                  <th style="width:70px;">品牌</th>
+                  <th style="width:70px;">级别</th>
+                  <th style="width:80px;text-align:right;">基期量(K)</th>
+                  <th style="width:80px;text-align:right;">当期量(K)</th>
+                  <th style="width:90px;text-align:right;">基期价(万)</th>
+                  <th style="width:90px;text-align:right;">当期价(万)</th>
+                  <th style="width:90px;text-align:right;">基期成本(万)</th>
+                  <th style="width:90px;text-align:right;">当期成本(万)</th>
+                  <th style="width:32px;"></th>
+                </tr>
+              </thead>
+              <tbody id="gmInputBody"></tbody>
+            </table>
+          </div>
+          <p class="hint" style="margin-top:10px;">CSV 格式：model,brand,tier,bVol,aVol,bPrice,aPrice,bCost,aCost — brand 填 NV 或 国产，tier 填 大卡 / 中卡 / 小卡</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUB: GM Bridge -->
+    <div id="gm-bridge" class="gm-sub" style="display:none;">
+      <div class="import-stats" id="gmBridgeMetrics" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;"></div>
+
+      <div class="section">
+        <div class="section-header" onclick="toggleSection(this)">
+          <div class="section-title"><span>Gross Margin Variance Bridge</span><span class="section-tag tag-a">PVM</span></div>
+          <div class="section-chevron open">&#8964;</div>
+        </div>
+        <div class="section-body open" id="gmBridgeBody"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-header" onclick="toggleSection(this)">
+          <div class="section-title"><span>SKU 明细</span><span class="section-tag tag-b">DETAIL</span></div>
+          <div class="section-chevron open">&#8964;</div>
+        </div>
+        <div class="section-body open">
+          <div class="table-wrap">
+            <table class="detail-table" style="min-width:960px;">
+              <thead><tr>
+                <th>型号</th><th>品牌</th><th>级别</th>
+                <th style="text-align:right;">基期量(K)</th><th style="text-align:right;">当期量(K)</th>
+                <th style="text-align:right;">基期Mix%</th><th style="text-align:right;">当期Mix%</th>
+                <th style="text-align:right;">基期UnitGM</th><th style="text-align:right;">当期UnitGM</th>
+                <th style="text-align:right;">基期GM(万)</th><th style="text-align:right;">当期GM(万)</th>
+                <th style="text-align:right;">ΔGM(万)</th>
+              </tr></thead>
+              <tbody id="gmDetailBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUB: 瀑布图 -->
+    <div id="gm-waterfall" class="gm-sub" style="display:none;">
+      <div class="section">
+        <div class="section-header" onclick="toggleSection(this)">
+          <div class="section-title"><span>GM 瀑布图（万元）</span><span class="section-tag tag-a">WATERFALL</span></div>
+          <div class="section-chevron open">&#8964;</div>
+        </div>
+        <div class="section-body open">
+          <div style="position:relative;width:100%;height:340px;"><canvas id="gmWfChart"></canvas></div>
+          <div id="gmWfLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:11px;font-family:var(--mono);color:var(--text3);"></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header" onclick="toggleSection(this)">
+          <div class="section-title"><span>GM% 基期 vs 当期对比</span><span class="section-tag tag-d">GM%</span></div>
+          <div class="section-chevron open">&#8964;</div>
+        </div>
+        <div class="section-body open">
+          <div style="position:relative;width:100%;height:200px;"><canvas id="gmPctChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUB: 分部拆解 -->
+    <div id="gm-segment" class="gm-sub" style="display:none;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+        <div class="chart-card">
+          <div class="chart-title">按品牌 — GM 贡献（万元）</div>
+          <div style="position:relative;width:100%;height:200px;"><canvas id="gmBrandChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">按级别 — GM 贡献（万元）</div>
+          <div style="position:relative;width:100%;height:200px;"><canvas id="gmTierChart"></canvas></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header" onclick="toggleSection(this)">
+          <div class="section-title"><span>品牌 × 级别 Mix% 变化</span><span class="section-tag tag-c">SEGMENT</span></div>
+          <div class="section-chevron open">&#8964;</div>
+        </div>
+        <div class="section-body open" id="gmSegBody"></div>
+      </div>
+    </div>
+
+    <!-- SUB: 公式说明 -->
+    <div id="gm-formula" class="gm-sub" style="display:none;">
+      <div class="section">
+        <div class="section-header" onclick="toggleSection(this)">
+          <div class="section-title"><span>核心等式</span><span class="section-tag tag-a">FORMULA</span></div>
+          <div class="section-chevron open">&#8964;</div>
+        </div>
+        <div class="section-body open">
+          <p style="font-family:var(--mono);font-size:14px;color:var(--accent2);margin-bottom:10px;">ΔGM = Vol Effect + Mix Effect + Price Effect + Cost Effect</p>
+          <p class="hint">四项之和严格等于当期GM − 基期GM，模型自动校验平衡。</p>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header" onclick="toggleSection(this)">
+          <div class="section-title"><span>Volume Effect — 量的影响</span><span class="section-tag tag-a">V</span></div>
+          <div class="section-chevron">&#8964;</div>
+        </div>
+        <div class="section-body">
+          <p style="font-family:var(--mono);font-size:12px;color:var(--text2);line-height:2;margin-bottom:8px;">Vol Effect = ΔTotal_Vol × Base_Blended_UnitGM<br>Base_Blended_UnitGM = Σ(bVol_i × bUnitGM_i) / Σ(bVol_i)</p>
+          <p class="hint">固定基期产品结构和毛利率，纯看总出货量变化。GPU整体市场需求扩张 / 收缩直接体现在此项。</p>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header" onclick="toggleSection(this)">
+          <div class="section-title"><span>Mix Effect — 产品组合影响</span><span class="section-tag tag-b">M</span></div>
+          <div class="section-chevron">&#8964;</div>
+        </div>
+        <div class="section-body">
+          <p style="font-family:var(--mono);font-size:12px;color:var(--text2);line-height:2;margin-bottom:8px;">Mix Effect = Σ(aVol_i × bUnitGM_i) − (Total_aVol × Base_Blended_UnitGM)</p>
+          <p class="hint">用实际量 × 基期单位GM重跑，减去纯量效应。捕捉大卡/小卡结构、NV/国产占比变化——高毛利产品（如H100）占比提升则Mix Effect为正。</p>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header" onclick="toggleSection(this)">
+          <div class="section-title"><span>Price Effect — 售价变动</span><span class="section-tag tag-c">P</span></div>
+          <div class="section-chevron">&#8964;</div>
+        </div>
+        <div class="section-body">
+          <p style="font-family:var(--mono);font-size:12px;color:var(--text2);line-height:2;margin-bottom:8px;">Price Effect = Σ((aPrice_i − bPrice_i) × aVol_i)</p>
+          <p class="hint">实际销量下，ASP变化带来的毛利影响。直接反映定价能力和价格战压力。</p>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header" onclick="toggleSection(this)">
+          <div class="section-title"><span>Cost Effect — 成本变化</span><span class="section-tag tag-d">C</span></div>
+          <div class="section-chevron">&#8964;</div>
+        </div>
+        <div class="section-body">
+          <p style="font-family:var(--mono);font-size:12px;color:var(--text2);line-height:2;margin-bottom:8px;">Cost Effect = Σ((bCost_i − aCost_i) × aVol_i)  [成本上涨 → 负值]</p>
+          <p class="hint">COGS单价变化，方向取反。主要驱动因素：HBM/GDDR成本、CoWoS封装、晶圆代工报价波动。</p>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /panel-gmvariance -->
+
+</div>
+
+<!-- LOCK MODAL -->
+<div class="modal-overlay" id="lockModal">
+  <div class="modal">
+    <div class="modal-title">&#128274; 确认锁定结账？</div>
+    <div class="modal-desc">
+      锁定后当前账期的所有数据将被冻结，<strong style="color:var(--red)">不允许任何修改</strong>。<br>
+      请确认以下调整已全部完成：<br><br>
+      &#10003; &nbsp;H20/H20-2/L20 分摊比例已设置<br>
+      &#10003; &nbsp;Real Coupon 调整已完成<br>
+      &#10003; &nbsp;归属特别处理规则已应用<br>
+      &#10003; &nbsp;增量数据已录入<br><br>
+      <span style="font-family:var(--mono);font-size:11px;color:var(--text3)">锁定账期：<span id="lockModalPeriod">--</span></span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="hideLockModal()">取消</button>
+      <button class="btn btn-lock" onclick="confirmLock()">确认锁定</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// =========================================================
+// STATE
+// =========================================================
+// =========================================================
+// 存储层：读写本地 Flask 服务（替代 localStorage）
+// =========================================================
+const API_BASE = '';
+
+let state = {
+  periods: {},
+  currentPeriod: null
+};
+
+// 启动时从后端异步加载 state，页面先渲染，数据到了再填充
+async function loadState() {
+  try {
+    const resp = await fetch(API_BASE + '/api/state');
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data && typeof data === 'object') {
+        state = { periods: {}, currentPeriod: null, ...data };
+      }
+    }
+  } catch(e) {
+    showToast('无法连接本地服务，请确认 server.py 已启动', 'error');
+  }
+}
+
+// 保存：异步 POST，失败时提示
+function saveState() {
+  fetch(API_BASE + '/api/state', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(state)
+  }).catch(() => {
+    showToast('保存失败，请确认 server.py 正在运行', 'error');
+  });
+}
+
+function getPeriod() {
+  return state.periods[state.currentPeriod];
+}
+
+// =========================================================
+// INIT + SSE 实时推送
+// =========================================================
+(async () => {
+  await loadState();
+  refreshPeriodSelector();
+  if (state.currentPeriod) {
+    switchPeriod(state.currentPeriod, false);
+  }
+  renderAll();
+  renderDashboard();
+  initSSE();
+})();
+
+// SSE：监听服务端推送，有更新自动刷新数据
+function initSSE() {
+  const es = new EventSource(API_BASE + '/api/events');
+  es.addEventListener('state_updated', async () => {
+    await loadState();
+    refreshPeriodSelector();
+    if (state.currentPeriod) switchPeriod(state.currentPeriod, false);
+    renderAll();
+    showToast('数据已更新', 'info');
+  });
+  es.onerror = () => {
+    // 断线后浏览器会自动重连，不需要手动处理
+  };
+}
+
+// =========================================================
+// FILE IMPORT
+// =========================================================
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('importZone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  if (!file.name.endsWith('.xlsx')) {
+    showToast('请上传 .xlsx 格式文件', 'error');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+      const sheet1 = XLSX.utils.sheet_to_json(wb.Sheets['明细数据'] || wb.Sheets[wb.SheetNames[0]], { defval: null });
+      const sheet2 = XLSX.utils.sheet_to_json(wb.Sheets['阿里云AGI清单'] || wb.Sheets[wb.SheetNames[1]] || {}, { defval: null });
+
+      // Extract periods：优先用 billing_period_str（YYYY-MM纯字符串），兜底用 billing_period
+      const periods = [...new Set(sheet1.map(r => r.billing_period_str || formatPeriod(r.billing_period)))].filter(Boolean).sort();
+      const mainPeriod = periods[periods.length - 1] || '未知账期'; // 默认选最新账期
+
+      // 按账期拆分数据，每个账期独立注册
+      periods.forEach(p => {
+        if (!state.periods[p]) {
+          state.periods[p] = {
+            mainData: [], aliData: [], alloc: {}, rcAdj: {},
+            specialTags: [], incremental: [], locked: false, lockedAt: null, importedAt: null
+          };
+        }
+        const pd = state.periods[p];
+        if (pd.locked) return; // 已锁定账期跳过
+        pd.mainData = sheet1.filter(r => (r.billing_period_str || formatPeriod(r.billing_period)) === p);
+        pd.aliData  = sheet2.filter(r => (r.billing_period_str || formatPeriod(r.billing_period_clean)) === p);
+        pd.importedAt = new Date().toLocaleString('zh-CN');
+
+        // Init alloc for small cards
+        const smallGPUs = ['H20', 'H20-2', 'L20'];
+        smallGPUs.forEach(gpu => {
+          if (!pd.alloc[gpu]) pd.alloc[gpu] = {};
+          if (!pd.alloc[gpu][p]) pd.alloc[gpu][p] = 100;
+        });
+      });
+
+      state.currentPeriod = mainPeriod;
+      saveState();
+      refreshPeriodSelector();
+      switchPeriod(mainPeriod, false);
+      renderAll();
+      showToast(`导入成功：明细 ${sheet1.length} 行，阿里云清单 ${sheet2.length} 行`, 'success');
+    } catch(err) {
+      showToast('文件解析失败，请确认格式正确', 'error');
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function formatPeriod(v) {
+  if (!v) return null;
+  if (v instanceof Date) {
+    const y = v.getUTCFullYear();
+    const m = String(v.getUTCMonth() + 1).padStart(2, '0');
+    return y + '-' + m;
+  }
+  const s = String(v);
+  // ISO时间戳（含T和Z）：用UTC解析，避免时区偏移月份错位
+  if (s.includes('T') || s.includes('Z')) {
+    const d = new Date(s);
+    if (!isNaN(d)) {
+      const y = d.getUTCFullYear();
+      const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+      return y + '-' + m;
+    }
+  }
+  if (/^\d{4}-\d{2}/.test(s)) return s.slice(0, 7);
+  return s;
+}
+
+function fmtNum(n) {
+  if (n == null || isNaN(n)) return '--';
+  return Number(n).toLocaleString('zh-CN', { minimumFractionDigits:2, maximumFractionDigits:2 });
+}
+
+function fmtWan(n) {
+  if (n == null || isNaN(n)) return '--';
+  return (Number(n)/10000).toLocaleString('zh-CN', { minimumFractionDigits:2, maximumFractionDigits:2 });
+}
+
+// =========================================================
+// PERIOD SELECTOR
+// =========================================================
+function refreshPeriodSelector() {
+  const sel = document.getElementById('periodSelect');
+  const periods = Object.keys(state.periods).sort().reverse();
+  sel.innerHTML = '<option value="">-- 请选择 --</option>' + periods.map(p =>
+    `<option value="${p}" ${p===state.currentPeriod?'selected':''}>${p}${state.periods[p].locked?' 🔒':''}</option>`
+  ).join('');
+
+  // Also populate detail/inc/rc period filters
+  ['detailPeriod','incPeriod'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = (id==='detailPeriod'?'<option value="">全部账期</option>':'<option value="">-- 选择账期 --</option>') +
+      periods.map(p=>`<option value="${p}">${p}</option>`).join('');
+  });
+}
+
+function switchPeriod(period, save=true) {
+  state.currentPeriod = period;
+  if (save) saveState();
+  renderAll();
+}
+
+// =========================================================
+// TABS
+// =========================================================
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const ids = ['dashboard','gmvariance','detail','import'];
+    t.classList.toggle('active', ids[i] === tab);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  if (tab === 'dashboard') renderDashboard();
+  if (tab === 'gmvariance') { /* GM panel loads on demand */ }
+  if (tab === 'detail') { renderDetail(); renderProviderFilter(); }
+}
+
+function switchSubTab(el, id) {
+  el.parentElement.querySelectorAll('.tab-sub-item').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('subManual').style.display = id==='manual' ? 'block' : 'none';
+  document.getElementById('subPaste').style.display = id==='paste' ? 'block' : 'none';
+}
+
+function toggleSection(header) {
+  const body = header.nextElementSibling;
+  const chev = header.querySelector('.section-chevron');
+  body.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+
+// =========================================================
+// RENDER ALL
+// =========================================================
+function renderAll() {
+  const pd = getPeriod();
+  const locked = pd ? pd.locked : false;
+  const isReadonly = locked;
+
+  // Lock badge
+  const badge = document.getElementById('lockBadge');
+  const badgeText = document.getElementById('lockBadgeText');
+  badge.className = 'lock-badge ' + (locked ? 'locked' : 'unlocked');
+  badgeText.textContent = locked ? '已锁定' : '草稿';
+
+  // Lock zone
+  document.getElementById('lockZoneUnlocked').style.display = locked ? 'none' : 'flex';
+  document.getElementById('lockZoneLocked').style.display = locked ? 'flex' : 'none';
+  if (locked && pd.lockedAt) {
+    document.getElementById('lockReadonlyDesc').textContent = `该账期数据已于 ${pd.lockedAt} 锁定，不允许修改。`;
+  }
+
+  // Import stats
+  if (pd && pd.mainData.length) {
+    document.getElementById('importStats').style.display = 'grid';
+    document.getElementById('statPeriod').textContent = state.currentPeriod || '--';
+    document.getElementById('statMainRows').textContent = pd.mainData.length.toLocaleString();
+    document.getElementById('statAliRows').textContent = pd.aliData.length.toLocaleString();
+    document.getElementById('statTime').textContent = pd.importedAt || '--';
+  } else {
+    document.getElementById('importStats').style.display = 'none';
+  }
+
+  // Disable controls if locked
+  ['btnSaveAlloc','btnSaveRC','btnAddSpecial'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = isReadonly;
+  });
+
+  renderAllocTable();
+  renderRCTable();
+  renderSpecialTags();
+  renderIncList();
+  renderProviderFilter();
+}
+
+// =========================================================
+// ALLOC TABLE (A)
+// =========================================================
+function renderAllocTable() {
+  const pd = getPeriod();
+  const body = document.getElementById('allocBody');
+  if (!pd || !pd.mainData.length) {
+    body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px">请先导入数据</td></tr>';
+    return;
+  }
+
+  const period = state.currentPeriod;
+  const smallGPUs = ['H20', 'H20-2', 'L20'];
+  const locked = pd.locked;
+
+  body.innerHTML = smallGPUs.map(gpu => {
+    const ratio = (pd.alloc[gpu] && pd.alloc[gpu][period] != null) ? pd.alloc[gpu][period] : 100;
+    const complement = 100 - ratio;
+    return `<tr>
+      <td class="period-label">${period}</td>
+      <td><span class="gpu-label">${gpu}</span></td>
+      <td>
+        <div class="ratio-input-wrap">
+          <input class="ratio-input" type="number" min="0" max="100" step="1"
+            value="${ratio}"
+            data-gpu="${gpu}" data-period="${period}"
+            ${locked ? 'disabled' : ''}
+            oninput="updateRatioBar(this)">
+          <span>%</span>
+        </div>
+      </td>
+      <td><span class="ratio-complement" id="comp-${gpu}">${complement.toFixed(0)}% 归常规</span></td>
+      <td>
+        <div class="ratio-bar">
+          <div class="ratio-fill" id="bar-${gpu}" style="width:${ratio}%"></div>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function updateRatioBar(input) {
+  const gpu = input.dataset.gpu;
+  let val = Math.min(100, Math.max(0, parseFloat(input.value) || 0));
+  document.getElementById(`bar-${gpu}`).style.width = val + '%';
+  document.getElementById(`comp-${gpu}`).textContent = (100-val).toFixed(0) + '% 归常规';
+}
+
+function saveAlloc() {
+  const pd = getPeriod();
+  if (!pd || pd.locked) return;
+  const period = state.currentPeriod;
+  document.querySelectorAll('.ratio-input').forEach(input => {
+    const gpu = input.dataset.gpu;
+    if (!pd.alloc[gpu]) pd.alloc[gpu] = {};
+    pd.alloc[gpu][period] = parseFloat(input.value) || 0;
+  });
+  saveState();
+  showToast('分摊比例已保存', 'success');
+}
+
+// =========================================================
+// RC ADJUSTMENT (B)
+// =========================================================
+function renderRCTable() {
+  const pd = getPeriod();
+  const body = document.getElementById('rcBody');
+  if (!pd || !pd.aliData.length) {
+    body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:24px">请先导入数据</td></tr>';
+    return;
+  }
+
+  const gFilter = document.getElementById('rcGpuFilter').value;
+  const locked = pd.locked;
+  if (!pd.rcAdj) pd.rcAdj = {};
+
+  // 按 GPU机型 + bill_type_classified 聚合
+  const groupMap = {};
+  pd.aliData.forEach(r => {
+    const gpu   = r['GPU机型'] || '--';
+    const btype = r['bill_type_classified'] || r['账单类型'] || '--';
+    const key   = gpu + '__' + btype;
+    if (!groupMap[key]) groupMap[key] = { gpu, btype, key, payable: 0, origRC: 0 };
+    groupMap[key].payable += parseFloat(r['优惠后金额'] || 0);
+    groupMap[key].origRC  += parseFloat(r['real_coupon_amount_cny'] || 0);
+  });
+
+  let rows = Object.values(groupMap);
+  if (gFilter) rows = rows.filter(g => g.gpu === gFilter);
+  rows.sort((a, b) => a.gpu.localeCompare(b.gpu) || a.btype.localeCompare(b.btype));
+
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:24px">无匹配数据</td></tr>';
+    return;
+  }
+
+  body.innerHTML = rows.map(g => {
+    const adj   = pd.rcAdj[g.key] || {};
+    const qty   = adj.qty   != null ? adj.qty   : '';
+    const price = adj.price != null ? adj.price : '';
+    const amount = (qty !== '' && price !== '') ? parseFloat(qty) * parseFloat(price) : null;
+    const safeId = g.key.replace(/[^a-zA-Z0-9]/g, '_');
+    return `<tr>
+      <td><span class="gpu-label">${g.gpu}</span></td>
+      <td>${g.btype}</td>
+      <td class="num">${fmtNum(g.payable)}</td>
+      <td class="num">${fmtNum(g.origRC)}</td>
+      <td>${locked
+        ? `<span style="color:var(--text2)">${qty !== '' ? qty : '--'}</span>`
+        : `<input class="rc-input" type="number" placeholder="台数" value="${qty}" data-key="${g.key}" data-field="qty" onchange="setRCAdj(this)" oninput="calcRCAmount('${safeId}')">`}
+      </td>
+      <td>${locked
+        ? `<span style="color:var(--text2)">${price !== '' ? price : '--'}</span>`
+        : `<input class="rc-input" type="number" placeholder="单价" value="${price}" data-key="${g.key}" data-field="price" onchange="setRCAdj(this)" oninput="calcRCAmount('${safeId}')">`}
+      </td>
+      <td class="num" id="rc-amount-${safeId}">${amount != null ? `<span style="color:var(--yellow)">${fmtNum(amount)}</span>` : '--'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function calcRCAmount(safeId) {
+  const el = document.getElementById('rc-amount-' + safeId);
+  if (!el) return;
+  const row = el.closest('tr');
+  const qty   = parseFloat(row.querySelector('[data-field="qty"]')?.value);
+  const price = parseFloat(row.querySelector('[data-field="price"]')?.value);
+  el.innerHTML = (!isNaN(qty) && !isNaN(price))
+    ? `<span style="color:var(--yellow)">${fmtNum(qty * price)}</span>` : '--';
+}
+
+function setRCAdj(input) {
+  const pd = getPeriod();
+  if (!pd) return;
+  const key   = input.dataset.key;
+  const field = input.dataset.field;
+  const val   = input.value === '' ? null : parseFloat(input.value);
+  if (!pd.rcAdj[key]) pd.rcAdj[key] = {};
+  if (val === null) delete pd.rcAdj[key][field];
+  else pd.rcAdj[key][field] = val;
+  if (!Object.keys(pd.rcAdj[key]).length) delete pd.rcAdj[key];
+}
+
+function saveRCAdj() {
+  const pd = getPeriod();
+  if (!pd || pd.locked) return;
+  saveState();
+  showToast(`Real Coupon 调整已保存，共 ${Object.keys(pd.rcAdj).length} 条`, 'success');
+}
+
+function clearRCAdj() {
+  const pd = getPeriod();
+  if (!pd || pd.locked) return;
+  pd.rcAdj = {};
+  saveState();
+  renderRCTable();
+  showToast('已清除所有调整', 'info');
+}
+
+// =========================================================
+// SPECIAL TAGS (C)
+// =========================================================
+function addConditionRow() {
+  const container = document.getElementById('conditionRows');
+  const row = document.createElement('div');
+  row.className = 'filter-row condition-row';
+  row.innerHTML = `
+    <select class="filter-select" style="min-width:160px">
+      <option value="provider">供应商 provider</option>
+      <option value="account_name">账号 account_name</option>
+      <option value="entity">法人主体 entity</option>
+      <option value="分类">分类</option>
+      <option value="owner">owner</option>
+      <option value="level1">level1</option>
+      <option value="level2">level2</option>
+      <option value="scene">scene</option>
+      <option value="billing_period">账期</option>
+    </select>
+    <select class="filter-select" style="min-width:100px">
+      <option value="eq">等于</option>
+      <option value="contains">包含</option>
+      <option value="neq">不等于</option>
+    </select>
+    <input class="filter-input" placeholder="值..." style="min-width:160px">
+    <button class="btn btn-danger" onclick="this.parentElement.remove()">删除</button>`;
+  container.appendChild(row);
+}
+
+function applySpecialTag() {
+  const pd = getPeriod();
+  if (!pd || pd.locked) return;
+  const name = document.getElementById('specialName').value.trim();
+  const remark = document.getElementById('specialRemark').value.trim();
+  if (!name) { showToast('请填写规则名称', 'error'); return; }
+
+  const conditions = [];
+  document.querySelectorAll('.condition-row').forEach(row => {
+    const selects = row.querySelectorAll('select');
+    const input = row.querySelector('input.filter-input');
+    if (selects.length >= 2 && input) {
+      conditions.push({ field: selects[0].value, op: selects[1].value, value: input.value.trim() });
+    }
+  });
+
+  // Match rows
+  const matched = pd.mainData.filter(r => matchConditions(r, conditions));
+
+  if (!matched.length) { showToast('条件未匹配到任何行，请调整条件', 'error'); return; }
+
+  pd.specialTags.push({ name, remark, conditions, count: matched.length, createdAt: new Date().toLocaleString('zh-CN') });
+  saveState();
+  renderSpecialTags();
+  document.getElementById('addSpecialForm').style.display = 'none';
+  document.getElementById('specialName').value = '';
+  document.getElementById('specialRemark').value = '';
+  showToast(`规则「${name}」已应用，匹配 ${matched.length} 行`, 'success');
+}
+
+function matchConditions(row, conditions) {
+  return conditions.every(c => {
+    const v = String(row[c.field] || '').toLowerCase();
+    const cv = c.value.toLowerCase();
+    if (c.op === 'eq') return v === cv;
+    if (c.op === 'contains') return v.includes(cv);
+    if (c.op === 'neq') return v !== cv;
+    return true;
+  });
+}
+
+function isSpecialRow(row) {
+  const pd = getPeriod();
+  if (!pd) return null;
+  for (const tag of pd.specialTags) {
+    if (matchConditions(row, tag.conditions)) return tag.name;
+  }
+  return null;
+}
+
+function renderSpecialTags() {
+  const pd = getPeriod();
+  const list = document.getElementById('specialTagList');
+  const container = document.getElementById('specialTagGroups');
+  if (!pd || !pd.specialTags.length) {
+    container.innerHTML = '<div class="hint" style="text-align:center;padding:20px">暂无特别处理规则，点击下方添加</div>';
+    list.innerHTML = '';
+    return;
+  }
+  container.innerHTML = '';
+  list.innerHTML = pd.specialTags.map((tag, i) => `
+    <div class="special-tag-item">
+      <div class="special-tag-info">
+        <div class="special-tag-name">&#9632; ${tag.name}</div>
+        <div class="special-tag-desc">${tag.conditions.map(c=>`${c.field} ${c.op} "${c.value}"`).join(' AND ')}</div>
+        <div class="special-tag-desc" style="margin-top:2px">创建于 ${tag.createdAt}${tag.remark?' · '+tag.remark:''}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="special-tag-count">${tag.count} 行</span>
+        ${!pd.locked ? `<button class="btn btn-danger" onclick="removeSpecialTag(${i})">删除</button>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function removeSpecialTag(i) {
+  const pd = getPeriod();
+  if (!pd || pd.locked) return;
+  pd.specialTags.splice(i, 1);
+  saveState();
+  renderSpecialTags();
+}
+
+// =========================================================
+// INCREMENTAL (D/E)
+// =========================================================
+function addManualInc() {
+  const pd = getPeriod();
+  if (!pd || pd.locked) return;
+  const period = document.getElementById('incPeriod').value;
+  const provider = document.getElementById('incProvider').value.trim();
+  const cls = document.getElementById('incClass').value;
+  const accrual = parseFloat(document.getElementById('incAccrual').value);
+  const cash = parseFloat(document.getElementById('incCash').value);
+  const accrualTax = parseFloat(document.getElementById('incAccrualTax').value) || accrual / 1.06;
+  const remark = document.getElementById('incRemark').value.trim();
+
+  if (!period || !provider || !cls || isNaN(accrual) || isNaN(cash) || !remark) {
+    showToast('请填写所有必填字段', 'error'); return;
+  }
+
+  pd.incremental.push({ period, provider, 分类: cls, accrual_base_cny: accrual, cash_base_cny: cash, accrual_base_without_tax_cny: accrualTax, remark, source: 'manual', createdAt: new Date().toLocaleString('zh-CN') });
+  saveState();
+  renderIncList();
+  // Clear
+  ['incProvider','incAccrual','incCash','incAccrualTax','incRemark'].forEach(id => document.getElementById(id).value = '');
+  showToast('增量记录已添加', 'success');
+}
+
+function parsePaste() {
+  const pd = getPeriod();
+  if (!pd || pd.locked) return;
+  const text = document.getElementById('pasteArea').value.trim();
+  if (!text) { showToast('请先粘贴数据', 'error'); return; }
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length < 2) { showToast('数据不足，至少需要表头行和一行数据', 'error'); return; }
+
+  const headers = lines[0].split('\t').map(h => h.trim());
+  const required = ['分类','accrual_base_cny','cash_base_cny','备注'];
+  const missing = required.filter(r => !headers.includes(r));
+  if (missing.length) { showToast('缺少必要字段：' + missing.join('、'), 'error'); return; }
+
+  let added = 0;
+  lines.slice(1).forEach(line => {
+    const cols = line.split('\t');
+    const row = {};
+    headers.forEach((h, i) => row[h] = cols[i]?.trim() || '');
+    if (!row['分类'] || !row['accrual_base_cny']) return;
+    pd.incremental.push({
+      period: row['账期'] || state.currentPeriod,
+      provider: row['供应商'] || '--',
+      分类: row['分类'],
+      accrual_base_cny: parseFloat(row['accrual_base_cny']) || 0,
+      cash_base_cny: parseFloat(row['cash_base_cny']) || 0,
+      accrual_base_without_tax_cny: parseFloat(row['accrual_base_without_tax_cny']) || parseFloat(row['accrual_base_cny'])/1.06 || 0,
+      remark: row['备注'] || '',
+      source: 'paste',
+      createdAt: new Date().toLocaleString('zh-CN')
+    });
+    added++;
+  });
+  saveState();
+  renderIncList();
+  document.getElementById('pasteArea').value = '';
+  showToast(`已导入 ${added} 条增量数据`, 'success');
+}
+
+function renderIncList() {
+  const pd = getPeriod();
+  const el = document.getElementById('incList');
+  if (!pd || !pd.incremental.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <div class="section-title" style="margin-bottom:10px;font-size:12px;color:var(--text3)">已录入增量数据（${pd.incremental.length} 条）</div>
+    <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>账期</th><th>供应商</th><th>分类</th><th style="text-align:right">accrual_base</th><th style="text-align:right">cash_base</th><th>备注</th><th>来源</th>${!pd.locked?'<th>操作</th>':''}</tr></thead>
+      <tbody>
+        ${pd.incremental.map((r,i)=>`
+          <tr>
+            <td class="text-mono">${r.period}</td>
+            <td>${r.provider}</td>
+            <td><span class="badge badge-${r.分类==='AGI'?'agi':r.分类==='Rednote'?'red':r.分类==='特殊'?'special':'common'}">${r.分类}</span></td>
+            <td class="num">${fmtNum(r.accrual_base_cny)}</td>
+            <td class="num">${fmtNum(r.cash_base_cny)}</td>
+            <td style="color:var(--text3)">${r.remark}</td>
+            <td><span class="badge badge-common">${r.source}</span></td>
+            ${!pd.locked?`<td><button class="btn btn-danger" onclick="removeInc(${i})" style="padding:3px 8px;font-size:10px">删除</button></td>`:''}
+          </tr>`).join('')}
+      </tbody>
+    </table></div>`;
+}
+
+function removeInc(i) {
+  const pd = getPeriod();
+  if (!pd || pd.locked) return;
+  pd.incremental.splice(i, 1);
+  saveState();
+  renderIncList();
+}
+
+// =========================================================
+// LOCK
+// =========================================================
+function showLockModal() {
+  document.getElementById('lockModalPeriod').textContent = state.currentPeriod || '--';
+  document.getElementById('lockModal').classList.add('show');
+}
+function hideLockModal() {
+  document.getElementById('lockModal').classList.remove('show');
+}
+function confirmLock() {
+  const pd = getPeriod();
+  if (!pd) return;
+  pd.locked = true;
+  pd.lockedAt = new Date().toLocaleString('zh-CN');
+  saveState();
+  hideLockModal();
+  refreshPeriodSelector();
+  renderAll();
+  showToast(`账期 ${state.currentPeriod} 已锁定`, 'success');
+}
+
+// =========================================================
+// DASHBOARD
+// =========================================================
+function renderDashboard() {
+  const pd = getPeriod();
+  if (!pd || !pd.mainData.length) {
+    document.getElementById('dashEmpty').style.display = 'block';
+    document.getElementById('dashContent').style.display = 'none';
+    return;
+  }
+  document.getElementById('dashEmpty').style.display = 'none';
+  document.getElementById('dashContent').style.display = 'block';
+
+  const allRows = getEffectiveRows(pd);
+
+  // ---- KPI 汇总（主数据口径）----
+  const totalAccrual    = sum(allRows, 'accrual_base_cny');
+  const totalAccrualTax = sum(allRows, 'accrual_base_without_tax_cny');
+  document.getElementById('kpiAccrual').textContent    = fmtWan(totalAccrual);
+  document.getElementById('kpiAccrualTax').textContent = fmtWan(totalAccrualTax);
+
+  // ---- 分类归组（主数据口径，不含阿里云清单）----
+  const clsMap = { regular:[], agi:[], rednote:[], itcost:[], special:[] };
+  allRows.forEach(r => {
+    const cls = getRowClass(r, pd);
+    if (cls === 'AGI') clsMap.agi.push(r);
+    else if (cls === 'Rednote' || cls === 'rednote') clsMap.rednote.push(r);
+    else if (cls === 'IT费用' || cls === 'ITcost') clsMap.itcost.push(r);
+    else if (cls === '特殊') clsMap.special.push(r);
+    else clsMap.regular.push(r);
+  });
+
+  // ---- 分类汇总条形图（三组各渲染）----
+  function renderCatList(elId, field, total) {
+    const cats = [
+      { key:'regular', color:'var(--accent)',  label:'常规'   },
+      { key:'agi',     color:'var(--purple)',  label:'AGI'    },
+      { key:'rednote', color:'var(--red)',      label:'Rednote'},
+      { key:'itcost',  color:'var(--orange)',  label:'IT费用' },
+    ];
+    const vals = cats.map(c => ({ ...c, val: sum(clsMap[c.key], field) }));
+    const maxVal = Math.max(...vals.map(v => v.val), 1);
+    document.getElementById(elId).innerHTML = vals.map(c => `
+      <div class="cat-row">
+        <div class="cat-row-header">
+          <span class="cat-name">${c.label}</span>
+          <span class="cat-amount" style="color:${c.color}">${fmtWan(c.val)} 万</span>
+        </div>
+        <div class="cat-bar-bg">
+          <div class="cat-bar-fill" style="width:${(c.val/maxVal*100).toFixed(1)}%;background:${c.color}"></div>
+        </div>
+      </div>`).join('');
+  }
+  renderCatList('catListAccrual',    'accrual_base_cny',             totalAccrual);
+  renderCatList('catListAccrualTax', 'accrual_base_without_tax_cny', totalAccrualTax);
+
+  // ---- 各分类 Top10 provider+product 明细表 ----
+  function renderClsTop10(clsKey, totalOverride) {
+    const rows = clsMap[clsKey];
+    const clsTotal = sum(rows, 'accrual_base_cny');
+    const base = totalOverride || clsTotal;
+    document.getElementById('clsTotal-' + clsKey).textContent = fmtWan(clsTotal) + ' 万';
+
+    const grouped = {};
+    rows.forEach(r => {
+      const k = (r.provider||'--') + ' · ' + (r.product||'--');
+      if (!grouped[k]) grouped[k] = 0;
+      grouped[k] += parseFloat(r.accrual_base_cny || 0);
+    });
+    const sorted = Object.entries(grouped).sort((a,b) => b[1]-a[1]).slice(0, 10);
+    document.getElementById('clsBody-' + clsKey).innerHTML = sorted.length
+      ? sorted.map(([k,v]) => `<tr>
+          <td class="highlight" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${k}">${k}</td>
+          <td class="num">${fmtWan(v)} 万</td>
+          <td class="num">${base>0?(v/base*100).toFixed(1):0}%</td>
+        </tr>`).join('')
+      : '<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:12px">无数据</td></tr>';
+  }
+  renderClsTop10('regular');
+  renderClsTop10('agi');
+  renderClsTop10('rednote');
+  renderClsTop10('itcost');
+
+  // ---- GPU明细（主数据AGI + 阿里云清单AGI，仅用于GPU机型明细展示，不影响分类汇总）----
+  const smallGPUs = ['H20','H20-2','L20'];
+  const aliAgiRows = (pd.aliData || []).filter(r => (r['分类']||'') === 'AGI').map(r => ({
+    型号: r['GPU机型'] || r['型号'] || '--',
+    类型: r['类型'] || '--',
+    accrual_base_cny: parseFloat(r['accrual_base_cny'] || 0),
+    _fromAli: true
+  }));
+  const gpuAllRows = [...clsMap.agi, ...aliAgiRows];
+  const gpuGroups = groupBy(gpuAllRows, r => r['型号'] || r['gpu_type'] || '--');
+  let gpuTotalOrig = 0, gpuTotalAgi = 0, gpuTotalCommon = 0;
+  const gpuRows = Object.entries(gpuGroups).map(([gpu, rows]) => {
+    const orig = sum(rows, 'accrual_base_cny');
+    const isSmall = smallGPUs.includes(gpu);
+    const ratio = isSmall ? ((pd.alloc[gpu] && pd.alloc[gpu][state.currentPeriod]) ?? 100) : 100;
+    const agiAmt = orig * ratio / 100;
+    const commonAmt = orig - agiAmt;
+    gpuTotalOrig   += orig;
+    gpuTotalAgi    += agiAmt;
+    gpuTotalCommon += commonAmt;
+    const hasAli  = rows.some(r => r._fromAli);
+    const hasMain = rows.some(r => !r._fromAli);
+    const srcTag  = hasAli && hasMain ? '主+阿里' : hasAli ? '阿里云' : '主数据';
+    return `<tr>
+      <td><span class="gpu-label">${gpu}</span></td>
+      <td style="color:var(--text3)">${rows.find(r=>r['类型']&&r['类型']!=='--')?.['类型']||'--'}</td>
+      <td class="num">${fmtWan(orig)} 万</td>
+      <td class="num">${isSmall ? ratio+'%' : '100%'}</td>
+      <td class="num text-accent">${fmtWan(agiAmt)} 万</td>
+      <td class="num" style="color:var(--text3)">${fmtWan(commonAmt)} 万</td>
+      <td style="font-size:10px;color:var(--text3);font-family:var(--mono)">${srcTag}</td>
+    </tr>`;
+  });
+  const gpuTotalRow = `<tr style="border-top:1px solid var(--border2);font-weight:500">
+    <td colspan="2" style="color:var(--text)">合计</td>
+    <td class="num" style="color:var(--text)">${fmtWan(gpuTotalOrig)} 万</td>
+    <td class="num">--</td>
+    <td class="num" style="color:var(--accent2)">${fmtWan(gpuTotalAgi)} 万</td>
+    <td class="num" style="color:var(--text3)">${fmtWan(gpuTotalCommon)} 万</td>
+    <td></td>
+  </tr>`;
+  document.getElementById('gpuBody').innerHTML = gpuRows.length
+    ? gpuRows.join('') + gpuTotalRow
+    : '<tr><td colspan="7" style="text-align:center;color:var(--text3)">无AGI数据</td></tr>';
+
+  // ---- 特殊 & 增量 ----
+  const specialRows = pd.specialTags.map(tag => {
+    const tagRows = allRows.filter(r => r._specialTag === tag.name);
+    return `<tr><td style="color:var(--orange)">${tag.name}</td><td class="num">${tagRows.length}</td><td class="num">${fmtWan(sum(tagRows,'accrual_base_cny'))} 万</td></tr>`;
+  });
+  const incGroups = groupBy(pd.incremental, r => r['分类']);
+  const incRows = Object.entries(incGroups).map(([cls,rows]) =>
+    `<tr><td><span class="badge badge-${cls==='AGI'?'agi':cls==='Rednote'?'red':cls==='特殊'?'special':'common'}">${cls}(增量)</span></td><td class="num">${rows.length}</td><td class="num">${fmtWan(sum(rows,'accrual_base_cny'))} 万</td></tr>`
+  );
+  document.getElementById('specialIncBody').innerHTML = [...specialRows, ...incRows].join('') ||
+    '<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:16px">无数据</td></tr>';
+}
+
+function getEffectiveRows(pd) {
+  let rows = [...pd.mainData];
+  // Apply special tags
+  rows = rows.map(r => {
+    const tag = pd.specialTags.find(t => matchConditions(r, t.conditions));
+    return tag ? { ...r, _specialTag: tag.name } : r;
+  });
+  // Add incremental
+  pd.incremental.forEach(inc => rows.push({ ...inc, _incremental: true }));
+  return rows;
+}
+
+function getRowClass(r, pd) {
+  if (r._specialTag) return '特殊';
+  if (r._incremental) return r['分类'];
+  return r['分类'] || '常规';
+}
+
+// =========================================================
+// DETAIL
+// =========================================================
+function renderProviderFilter() {
+  const pd = getPeriod();
+  const sel = document.getElementById('detailProvider');
+  if (!pd) return;
+  const providers = [...new Set(pd.mainData.map(r => r.provider||'').filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">全部供应商</option>' + providers.map(p=>`<option>${p}</option>`).join('');
+}
+
+function renderDetail() {
+  const pd = getPeriod();
+  const body = document.getElementById('detailBody');
+  if (!pd || !pd.mainData.length) {
+    body.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:40px">请先导入数据</td></tr>';
+    return;
+  }
+
+  const pFilter = document.getElementById('detailPeriod').value;
+  const cFilter = document.getElementById('detailClass').value;
+  const provFilter = document.getElementById('detailProvider').value;
+  const search = document.getElementById('detailSearch').value.toLowerCase();
+
+  let rows = getEffectiveRows(pd);
+  if (pFilter) rows = rows.filter(r => (r.billing_period_str || formatPeriod(r.billing_period||r.period)) === pFilter);
+  if (cFilter) rows = rows.filter(r => getRowClass(r, pd) === cFilter);
+  if (provFilter) rows = rows.filter(r => (r.provider||r['供应商']||'') === provFilter);
+  if (search) rows = rows.filter(r => JSON.stringify(r).toLowerCase().includes(search));
+
+  // 按 accrual_base_cny 从大到小排序
+  rows.sort((a, b) => (parseFloat(b.accrual_base_cny) || 0) - (parseFloat(a.accrual_base_cny) || 0));
+
+  document.getElementById('detailCount').textContent = `共 ${rows.length} 条`;
+
+  body.innerHTML = rows.slice(0, 200).map(r => {
+    const cls = getRowClass(r, pd);
+    const badgeCls = cls==='AGI'?'agi':cls==='Rednote'?'red':cls==='特殊'?'special':'common';
+    const marks = [
+      r._specialTag ? `<span class="special-marker" title="特别处理：${r._specialTag}">&#11044;</span>` : '',
+      r._incremental ? `<span class="incremental-marker" title="增量数据">&#43;</span>` : '',
+      pd.rcAdj[(r['实例ID']||'')+'_'+(r.billing_period_clean||'')] != null ? `<span class="adjusted-marker" title="RC已调整">&#9650;</span>` : ''
+    ].join('');
+    return `<tr>
+      <td class="text-mono" style="color:var(--accent2)">${r.billing_period_str || formatPeriod(r.billing_period||r.period)||'--'}</td>
+      <td>${r.provider||r['供应商']||'--'}</td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis">${r.account_name||r['账号']||'--'}</td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis">${r.product||r['产品']||'--'}</td>
+      <td><span class="badge badge-${badgeCls}">${cls}</span></td>
+      <td>${r['类型']||'--'}</td>
+      <td>${r['型号']||'--'}</td>
+      <td class="num">${fmtNum(r.accrual_base_cny)}</td>
+      <td class="num">${fmtNum(r.cash_base_cny)}</td>
+      <td>${marks}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:24px">无匹配数据</td></tr>';
+
+  if (rows.length > 200) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="10" style="text-align:center;color:var(--text3);padding:12px;font-size:11px">仅显示前 200 条，请使用筛选条件缩小范围</td>`;
+    body.appendChild(tr);
+  }
+}
+
+// =========================================================
+// HISTORY
+// =========================================================
+function renderHistory() {
+  const locked = Object.entries(state.periods).filter(([,p]) => p.locked);
+  const all = Object.entries(state.periods).sort((a,b) => a[0].localeCompare(b[0]));
+
+  if (locked.length < 2) {
+    document.getElementById('histEmpty').style.display = 'block';
+    document.getElementById('histContent').style.display = 'none';
+    return;
+  }
+  document.getElementById('histEmpty').style.display = 'none';
+  document.getElementById('histContent').style.display = 'block';
+
+  const cats = ['常规','AGI','Rednote','特殊'];
+  const catColors = { '常规':'var(--accent)','AGI':'var(--purple)','Rednote':'var(--red)','特殊':'var(--orange)' };
+  const catHeights = { '常规':36,'AGI':60,'Rednote':24,'特殊':20 };
+
+  const periodData = all.map(([period, pd]) => {
+    const rows = getEffectiveRowsForPd(pd, period);
+    const catSums = {};
+    cats.forEach(c => catSums[c] = sum(rows.filter(r => getRowClassForPd(r, pd) === c), 'accrual_base_cny'));
+    return { period, locked: pd.locked, catSums, total: sum(rows, 'accrual_base_cny') };
+  });
+
+  const maxTotal = Math.max(...periodData.map(d => d.total), 1);
+
+  document.getElementById('histBars').innerHTML = periodData.map(d => `
+    <div class="h-bar-group">
+      <div class="h-bar-stacks">
+        ${cats.map(c => `<div class="h-bar" style="background:${catColors[c]};height:${Math.max(4,(d.catSums[c]/maxTotal*130).toFixed(0))}px" title="${c}: ${fmtWan(d.catSums[c])}万"></div>`).join('')}
+      </div>
+      <div class="h-bar-label">${d.period.slice(5)}</div>
+    </div>`).join('');
+
+  document.getElementById('histBody').innerHTML = periodData.map(d => `
+    <tr>
+      <td class="text-mono text-accent">${d.period}</td>
+      <td><span class="badge ${d.locked?'badge-locked':'badge-draft'}">${d.locked?'已锁定':'草稿'}</span></td>
+      ${cats.map(c=>`<td class="num">${fmtWan(d.catSums[c])}</td>`).join('')}
+      <td class="num" style="font-weight:500">${fmtWan(d.total)}</td>
+    </tr>`).join('');
+}
+
+function getEffectiveRowsForPd(pd, period) {
+  let rows = [...(pd.mainData||[])];
+  rows = rows.map(r => {
+    const tag = (pd.specialTags||[]).find(t => matchConditions(r, t.conditions));
+    return tag ? { ...r, _specialTag: tag.name } : r;
+  });
+  (pd.incremental||[]).forEach(inc => rows.push({ ...inc, _incremental: true }));
+  return rows;
+}
+
+function getRowClassForPd(r, pd) {
+  if (r._specialTag) return '特殊';
+  if (r._incremental) return r['分类'];
+  return r['分类'] || '常规';
+}
+
+// =========================================================
+// GM VARIANCE MODULE
+// =========================================================
+const GM_BRANDS = ['NV', '国产'];
+const GM_TIERS = ['大卡', '中卡', '小卡'];
+let gmRows = [];
+let gmCharts = {};
+
+const GM_DEFAULTS = [
+  { model:'H100 SXM5', brand:'NV',   tier:'大卡', bVol:50,  aVol:58,  bPrice:280, aPrice:292, bCost:168, aCost:172 },
+  { model:'H200',      brand:'NV',   tier:'大卡', bVol:20,  aVol:35,  bPrice:310, aPrice:308, bCost:182, aCost:185 },
+  { model:'L40S',      brand:'NV',   tier:'中卡', bVol:120, aVol:135, bPrice:45,  aPrice:46,  bCost:28,  aCost:29  },
+  { model:'RTX 4090',  brand:'NV',   tier:'小卡', bVol:300, aVol:260, bPrice:12,  aPrice:12.5,bCost:7.2, aCost:7.8 },
+  { model:'910B',      brand:'国产', tier:'大卡', bVol:30,  aVol:58,  bPrice:220, aPrice:215, bCost:160, aCost:156 },
+  { model:'910C',      brand:'国产', tier:'大卡', bVol:10,  aVol:28,  bPrice:235, aPrice:228, bCost:168, aCost:163 },
+  { model:'N100',      brand:'国产', tier:'中卡', bVol:80,  aVol:125, bPrice:35,  aPrice:34,  bCost:22,  aCost:21  },
+  { model:'N200',      brand:'国产', tier:'中卡', bVol:40,  aVol:70,  bPrice:52,  aPrice:50,  bCost:32,  aCost:31  },
+  { model:'RX7900XTX', brand:'国产', tier:'小卡', bVol:60,  aVol:90,  bPrice:8,   aPrice:7.8, bCost:5,   aCost:4.8 },
+];
+
+function gmLoadDefaults() {
+  gmRows = GM_DEFAULTS.map(r => ({...r}));
+  gmRenderInput();
+  showToast('示例数据已加载', 'success');
+}
+
+function gmRenderInput() {
+  document.getElementById('gmInputBody').innerHTML = gmRows.map((r, i) => `
+    <tr>
+      <td class="gm-input-cell"><input type="text" value="${r.model}" onchange="gmRows[${i}].model=this.value" style="text-align:left;min-width:110px;"></td>
+      <td class="gm-input-cell">
+        <select onchange="gmRows[${i}].brand=this.value">
+          ${GM_BRANDS.map(b => `<option value="${b}" ${b===r.brand?'selected':''}>${b}</option>`).join('')}
+        </select>
+      </td>
+      <td class="gm-input-cell">
+        <select onchange="gmRows[${i}].tier=this.value">
+          ${GM_TIERS.map(t => `<option value="${t}" ${t===r.tier?'selected':''}>${t}</option>`).join('')}
+        </select>
+      </td>
+      <td class="gm-input-cell" style="text-align:right;"><input type="number" value="${r.bVol}" step="0.1" onchange="gmRows[${i}].bVol=+this.value"></td>
+      <td class="gm-input-cell" style="text-align:right;"><input type="number" value="${r.aVol}" step="0.1" onchange="gmRows[${i}].aVol=+this.value"></td>
+      <td class="gm-input-cell" style="text-align:right;"><input type="number" value="${r.bPrice}" step="0.1" onchange="gmRows[${i}].bPrice=+this.value"></td>
+      <td class="gm-input-cell" style="text-align:right;"><input type="number" value="${r.aPrice}" step="0.1" onchange="gmRows[${i}].aPrice=+this.value"></td>
+      <td class="gm-input-cell" style="text-align:right;"><input type="number" value="${r.bCost}" step="0.1" onchange="gmRows[${i}].bCost=+this.value"></td>
+      <td class="gm-input-cell" style="text-align:right;"><input type="number" value="${r.aCost}" step="0.1" onchange="gmRows[${i}].aCost=+this.value"></td>
+      <td><button class="gm-del-btn" onclick="gmDeleteRow(${i})">×</button></td>
+    </tr>
+  `).join('') || '<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:24px;font-family:var(--mono);font-size:12px;">暂无数据 — 点击「添加行」或「加载示例数据」</td></tr>';
+}
+
+function gmAddRow() {
+  gmRows.push({ model:'新型号', brand:'NV', tier:'中卡', bVol:0, aVol:0, bPrice:0, aPrice:0, bCost:0, aCost:0 });
+  gmRenderInput();
+}
+function gmDeleteRow(i) { gmRows.splice(i,1); gmRenderInput(); }
+function gmClearAll() { if(confirm('清空所有 GM 数据？')) { gmRows=[]; gmRenderInput(); } }
+
+function gmCompute() {
+  if (!gmRows.length) return null;
+  const bGM  = gmRows.reduce((s,r) => s + r.bVol*(r.bPrice-r.bCost), 0);
+  const aGM  = gmRows.reduce((s,r) => s + r.aVol*(r.aPrice-r.aCost), 0);
+  const bVT  = gmRows.reduce((s,r) => s + r.bVol, 0);
+  const aVT  = gmRows.reduce((s,r) => s + r.aVol, 0);
+  const bRev = gmRows.reduce((s,r) => s + r.bVol*r.bPrice, 0);
+  const aRev = gmRows.reduce((s,r) => s + r.aVol*r.aPrice, 0);
+  const blended = bVT > 0 ? bGM/bVT : 0;
+  const volEff   = (aVT - bVT) * blended;
+  const mixEff   = gmRows.reduce((s,r) => s + r.aVol*(r.bPrice-r.bCost), 0) - aVT*blended;
+  const priceEff = gmRows.reduce((s,r) => s + (r.aPrice-r.bPrice)*r.aVol, 0);
+  const costEff  = gmRows.reduce((s,r) => s + (r.bCost-r.aCost)*r.aVol, 0);
+  const skus = gmRows.map(r => ({
+    ...r,
+    bUGM: r.bPrice-r.bCost, aUGM: r.aPrice-r.aCost,
+    bGM: r.bVol*(r.bPrice-r.bCost), aGM: r.aVol*(r.aPrice-r.aCost),
+    bMix: bVT>0?r.bVol/bVT:0, aMix: aVT>0?r.aVol/aVT:0
+  }));
+  return { bGM, aGM, bVT, aVT, bRev, aRev, blended, volEff, mixEff, priceEff, costEff, skus,
+    bGMpct: bRev>0?bGM/bRev:0, aGMpct: aRev>0?aGM/aRev:0 };
+}
+
+function gmF(v,d=1) { return (v>=0?'+':'')+Math.abs(v).toFixed(d); }
+function gmFA(v,d=1) { return v.toFixed(d); }
+function gmFP(v,d=1) { return (v*100).toFixed(d)+'%'; }
+
+function gmRunAnalysis() {
+  const d = gmCompute();
+  if (!d) { showToast('请先输入数据', 'error'); return; }
+  gmRenderBridge(d);
+  gmRenderWaterfall(d);
+  gmRenderSegment(d);
+  gmSwitchSub(document.querySelector('#gmSubTabs .tab-sub-item:nth-child(2)'), 'gm-bridge');
+  showToast('GM 分析完成', 'success');
+}
+
+function gmRenderBridge(d) {
+  const { bGM, aGM, volEff, mixEff, priceEff, costEff, bGMpct, aGMpct, bRev, aRev } = d;
+  const dGM = aGM - bGM, dPct = aGMpct - bGMpct;
+
+  document.getElementById('gmBridgeMetrics').innerHTML = `
+    <div class="stat-card"><div class="stat-label">基期 GM（万）</div><div class="stat-value" style="font-size:18px;">${gmFA(bGM)}</div><div class="stat-sub">GM% ${gmFP(bGMpct)}</div></div>
+    <div class="stat-card"><div class="stat-label">当期 GM（万）</div><div class="stat-value" style="font-size:18px;">${gmFA(aGM)}</div><div class="stat-sub">GM% ${gmFP(aGMpct)}</div></div>
+    <div class="stat-card"><div class="stat-label">ΔGM（万）</div><div class="stat-value" style="font-size:18px;color:${dGM>=0?'var(--green)':'var(--red)'};">${gmF(dGM)}</div><div class="stat-sub">${gmF(dGM/Math.abs(bGM)*100,1)}% vs 基期</div></div>
+    <div class="stat-card"><div class="stat-label">ΔGM%（pp）</div><div class="stat-value" style="font-size:18px;color:${dPct>=0?'var(--green)':'var(--red)'};">${gmF(dPct*100,1)} pp</div><div class="stat-sub">${gmFP(bGMpct)} → ${gmFP(aGMpct)}</div></div>
+  `;
+
+  const items = [
+    { label:'基期 Gross Margin', val:bGM, hint:'', cls:'gm-bridge-base' },
+    { label:'Volume Effect', val:volEff, hint:'总出货量变化 × 基期加权UnitGM', cls:'' },
+    { label:'Mix Effect', val:mixEff, hint:'大/中/小卡 · NV/国产 结构变化', cls:'' },
+    { label:'Price Effect', val:priceEff, hint:'当期销量 × 售价变化', cls:'' },
+    { label:'Cost Effect', val:costEff, hint:'当期销量 × COGS变化（反向）', cls:'' },
+    { label:'当期 Gross Margin', val:aGM, hint:'', cls:'gm-bridge-total' },
+  ];
+  const maxA = Math.max(...items.map(x=>Math.abs(x.val)));
+  const balanced = Math.abs(dGM-(volEff+mixEff+priceEff+costEff)) < 0.01;
+  const isEnd = (i) => i===0||i===items.length-1;
+
+  let html = '<div>';
+  items.forEach((item, i) => {
+    const end = isEnd(i);
+    const color = end ? 'var(--accent2)' : item.val>=0 ? 'var(--green)' : 'var(--red)';
+    const barW = (Math.abs(item.val)/maxA*100).toFixed(1);
+    html += `<div class="gm-bridge-row ${item.cls}" style="font-weight:${end?'500':'400'};">
+      <div class="gm-bridge-label">${item.label}</div>
+      <div class="gm-bridge-hint">${item.hint}</div>
+      <div class="gm-bridge-bar-wrap">
+        ${end
+          ? `<div class="gm-bridge-bar" style="width:${barW}%;background:${color};opacity:0.7;"></div>`
+          : `<div style="display:flex;width:100%;height:100%;align-items:center;">
+               <div style="width:50%;display:flex;justify-content:${item.val>=0?'flex-end':'flex-start'};">
+                 <div class="gm-bridge-bar" style="width:${(Math.abs(item.val)/maxA*50).toFixed(1)}%;background:${color};opacity:0.75;"></div>
+               </div>
+               <div style="width:1px;height:14px;background:var(--border2);flex-shrink:0;"></div>
+               <div style="width:50%;"></div>
+             </div>`}
+      </div>
+      <div class="gm-bridge-val" style="color:${color};">${end?gmFA(item.val):gmF(item.val)}</div>
+      <div class="gm-bridge-pct">${end?(i===0?'基期':'当期'):gmF(item.val/Math.abs(bGM)*100,1)+'%'}</div>
+    </div>`;
+  });
+  html += '</div>';
+  html += `<div style="padding:10px 14px;">${balanced
+    ? '<span class="gm-check-ok">✓ 模型平衡 — Vol + Mix + Price + Cost = ΔGM</span>'
+    : '<span class="gm-check-err">⚠ 模型未平衡，请检查数据</span>'}</div>`;
+  document.getElementById('gmBridgeBody').innerHTML = html;
+
+  const tagBrand = (b) => b==='NV'?'<span class="gm-tag-nv">NV</span>':'<span class="gm-tag-dom">国产</span>';
+  const tagTier  = (t) => t==='大卡'?'<span class="gm-tag-hi">大卡</span>':t==='中卡'?'<span class="gm-tag-mid">中卡</span>':'<span class="gm-tag-lo">小卡</span>';
+
+  document.getElementById('gmDetailBody').innerHTML = d.skus.map(r => `<tr>
+    <td style="font-family:var(--mono);font-size:11px;">${r.model}</td>
+    <td>${tagBrand(r.brand)}</td><td>${tagTier(r.tier)}</td>
+    <td style="text-align:right;font-family:var(--mono);">${gmFA(r.bVol)}</td>
+    <td style="text-align:right;font-family:var(--mono);">${gmFA(r.aVol)}</td>
+    <td style="text-align:right;font-family:var(--mono);">${gmFP(r.bMix)}</td>
+    <td style="text-align:right;font-family:var(--mono);">${gmFP(r.aMix)}</td>
+    <td style="text-align:right;font-family:var(--mono);">${gmFA(r.bUGM,2)}</td>
+    <td style="text-align:right;font-family:var(--mono);">${gmFA(r.aUGM,2)}</td>
+    <td style="text-align:right;font-family:var(--mono);">${gmFA(r.bGM)}</td>
+    <td style="text-align:right;font-family:var(--mono);">${gmFA(r.aGM)}</td>
+    <td style="text-align:right;font-family:var(--mono);font-weight:500;color:${r.aGM-r.bGM>=0?'var(--green)':'var(--red)'};">${gmF(r.aGM-r.bGM)}</td>
+  </tr>`).join('');
+}
+
+function gmDestroyChart(k) { if(gmCharts[k]){ gmCharts[k].destroy(); delete gmCharts[k]; } }
+
+function gmRenderWaterfall(d) {
+  gmDestroyChart('wf'); gmDestroyChart('pct');
+  const { bGM, aGM, volEff, mixEff, priceEff, costEff, bGMpct, aGMpct } = d;
+  const labels = ['Base GM','Volume','Mix','Price','Cost','Current GM'];
+  const vals   = [bGM, volEff, mixEff, priceEff, costEff, aGM];
+  let run = 0;
+  const floats=[], bars=[], colors=[];
+  vals.forEach((v,i) => {
+    const end = i===0||i===vals.length-1;
+    if (end) { floats.push(0); bars.push(v); colors.push('#4f8ef7'); }
+    else { floats.push(v>=0?run:run+v); bars.push(Math.abs(v)); colors.push(v>=0?'#3dd68c':'#f76f6f'); run+=v; }
+  });
+  gmCharts.wf = new Chart(document.getElementById('gmWfChart'), {
+    type:'bar',
+    data:{ labels, datasets:[
+      { data:floats, backgroundColor:'transparent', stack:'s' },
+      { data:bars, backgroundColor:colors, stack:'s', borderRadius:4, borderSkipped:false }
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx => { if(ctx.datasetIndex===0) return null; const v=vals[ctx.dataIndex]; return (v>=0?'+':'')+v.toFixed(1)+'万'; } } } },
+      scales:{
+        x:{stacked:true,ticks:{color:'#555f7a',autoSkip:false},grid:{color:'rgba(255,255,255,0.04)'}},
+        y:{stacked:true,ticks:{color:'#555f7a',callback:v=>v.toFixed(0)},grid:{color:'rgba(255,255,255,0.06)'}}
+      }
+    }
+  });
+
+  document.getElementById('gmWfLegend').innerHTML = [['#4f8ef7','GM 基准/当期'],['#3dd68c','正向因子'],['#f76f6f','负向因子']].map(([c,l]) =>
+    `<span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:${c};display:inline-block;"></span>${l}</span>`).join('');
+
+  gmCharts.pct = new Chart(document.getElementById('gmPctChart'), {
+    type:'bar',
+    data:{ labels:['基期 GM%','当期 GM%'], datasets:[{ data:[bGMpct*100,aGMpct*100], backgroundColor:['#4f8ef7','#3dd68c'], borderRadius:4, borderSkipped:false, maxBarThickness:50 }] },
+    options:{ responsive:true, maintainAspectRatio:false, indexAxis:'y',
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:ctx=>ctx.raw.toFixed(2)+'%' } } },
+      scales:{ x:{min:0,max:Math.ceil(Math.max(bGMpct,aGMpct)*100)+5,ticks:{color:'#555f7a',callback:v=>v+'%'},grid:{color:'rgba(255,255,255,0.06)'}}, y:{ticks:{color:'#8892aa'},grid:{display:false}} }
+    }
+  });
+}
+
+function gmRenderSegment(d) {
+  gmDestroyChart('brand'); gmDestroyChart('tier');
+  const byBrand={}, byTier={};
+  d.skus.forEach(r => {
+    if (!byBrand[r.brand]) byBrand[r.brand]={bGM:0,aGM:0};
+    if (!byTier[r.tier])  byTier[r.tier] ={bGM:0,aGM:0};
+    byBrand[r.brand].bGM+=r.bGM; byBrand[r.brand].aGM+=r.aGM;
+    byTier[r.tier].bGM +=r.bGM;  byTier[r.tier].aGM +=r.aGM;
+  });
+  const bK=Object.keys(byBrand);
+  gmCharts.brand = new Chart(document.getElementById('gmBrandChart'), {
+    type:'bar', data:{ labels:bK, datasets:[
+      { label:'基期',data:bK.map(k=>byBrand[k].bGM),backgroundColor:'#4f8ef7',borderRadius:4,maxBarThickness:40 },
+      { label:'当期',data:bK.map(k=>byBrand[k].aGM),backgroundColor:'#3dd68c',borderRadius:4,maxBarThickness:40 }
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ x:{ticks:{color:'#8892aa'},grid:{display:false}}, y:{ticks:{color:'#555f7a',callback:v=>v.toFixed(0)},grid:{color:'rgba(255,255,255,0.06)'}} } }
+  });
+  const tK=['大卡','中卡','小卡'].filter(t=>byTier[t]);
+  gmCharts.tier = new Chart(document.getElementById('gmTierChart'), {
+    type:'bar', data:{ labels:tK, datasets:[
+      { label:'基期',data:tK.map(k=>byTier[k].bGM),backgroundColor:'#4f8ef7',borderRadius:4,maxBarThickness:40 },
+      { label:'当期',data:tK.map(k=>byTier[k].aGM),backgroundColor:'#3dd68c',borderRadius:4,maxBarThickness:40 }
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ x:{ticks:{color:'#8892aa'},grid:{display:false}}, y:{ticks:{color:'#555f7a',callback:v=>v.toFixed(0)},grid:{color:'rgba(255,255,255,0.06)'}} } }
+  });
+
+  const combos={};
+  d.skus.forEach(r => {
+    const k=r.brand+'|'+r.tier;
+    if (!combos[k]) combos[k]={brand:r.brand,tier:r.tier,bVol:0,aVol:0};
+    combos[k].bVol+=r.bVol; combos[k].aVol+=r.aVol;
+  });
+  const tierOrder=['大卡','中卡','小卡'];
+  const seg=Object.values(combos).sort((a,b)=>a.brand.localeCompare(b.brand)||tierOrder.indexOf(a.tier)-tierOrder.indexOf(b.tier));
+  const tagBrand = b => b==='NV'?'<span class="gm-tag-nv">NV</span>':'<span class="gm-tag-dom">国产</span>';
+  const tagTier  = t => t==='大卡'?'<span class="gm-tag-hi">大卡</span>':t==='中卡'?'<span class="gm-tag-mid">中卡</span>':'<span class="gm-tag-lo">小卡</span>';
+  const rows = seg.map(r => {
+    const bM=d.bVT>0?r.bVol/d.bVT:0, aM=d.aVT>0?r.aVol/d.aVT:0, dM=aM-bM;
+    return `<tr>
+      <td>${tagBrand(r.brand)}</td><td>${tagTier(r.tier)}</td>
+      <td style="text-align:right;font-family:var(--mono);font-size:11px;">${gmFA(r.bVol)}</td>
+      <td style="text-align:right;font-family:var(--mono);font-size:11px;">${gmFA(r.aVol)}</td>
+      <td style="text-align:right;font-family:var(--mono);font-size:11px;">${gmFP(bM)}</td>
+      <td style="text-align:right;font-family:var(--mono);font-size:11px;">${gmFP(aM)}</td>
+      <td style="text-align:right;font-family:var(--mono);font-size:11px;font-weight:500;color:${dM>=0?'var(--green)':'var(--red)'};">${gmF(dM*100,1)} pp</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('gmSegBody').innerHTML = `<div class="table-wrap"><table class="detail-table" style="min-width:600px;">
+    <thead><tr>
+      <th>品牌</th><th>级别</th>
+      <th style="text-align:right;">基期Vol(K)</th><th style="text-align:right;">当期Vol(K)</th>
+      <th style="text-align:right;">基期Mix%</th><th style="text-align:right;">当期Mix%</th>
+      <th style="text-align:right;">Mix变化 pp</th>
+    </tr></thead><tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function gmSwitchSub(el, id) {
+  document.querySelectorAll('#gmSubTabs .tab-sub-item').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.gm-sub').forEach(p => p.style.display='none');
+  document.getElementById(id).style.display='block';
+}
+
+function gmExportCSV() {
+  const hdr = 'model,brand,tier,bVol,aVol,bPrice,aPrice,bCost,aCost\n';
+  const body = gmRows.map(r => [r.model,r.brand,r.tier,r.bVol,r.aVol,r.bPrice,r.aPrice,r.bCost,r.aCost].join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([hdr+body],{type:'text/csv'}));
+  a.download = 'gpu_gm_data.csv'; a.click();
+}
+
+function gmHandleFile(input) {
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const lines = e.target.result.trim().split('\n').filter(l=>l.trim());
+      const hdr = lines[0].toLowerCase().split(',').map(h=>h.trim());
+      const idx = k => hdr.indexOf(k);
+      gmRows = lines.slice(1).map(line => {
+        const c = line.split(',');
+        return { model:c[idx('model')]||'Unknown', brand:c[idx('brand')]||'NV', tier:c[idx('tier')]||'中卡',
+          bVol:+c[idx('bvol')]||0, aVol:+c[idx('avol')]||0,
+          bPrice:+c[idx('bprice')]||0, aPrice:+c[idx('aprice')]||0,
+          bCost:+c[idx('bcost')]||0, aCost:+c[idx('acost')]||0 };
+      });
+      gmRenderInput();
+      showToast(`已导入 ${gmRows.length} 行数据`, 'success');
+    } catch(err) { showToast('CSV 解析失败，请检查格式', 'error'); }
+  };
+  reader.readAsText(file);
+}
+
+gmLoadDefaults();
+
+// =========================================================
+// UTILS
+// =========================================================
+function sum(arr, key) {
+  return arr.reduce((acc, r) => acc + (parseFloat(r[key]) || 0), 0);
+}
+
+function groupBy(arr, fn) {
+  return arr.reduce((acc, r) => {
+    const k = fn(r);
+    if (!acc[k]) acc[k] = [];
+    acc[k].push(r);
+    return acc;
+  }, {});
+}
+
+function showToast(msg, type='info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  const icons = { success:'✓', error:'✕', info:'ℹ' };
+  toast.innerHTML = `<span>${icons[type]||'ℹ'}</span><span>${msg}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+// =========================================================
+// DETAIL SUB-TAB SWITCH
+// =========================================================
+function switchDetailSubTab(el, id) {
+  el.parentElement.querySelectorAll('.tab-sub-item').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('detail-rows').style.display = id === 'detail-rows' ? 'block' : 'none';
+  document.getElementById('detail-pivot').style.display = id === 'detail-pivot' ? 'block' : 'none';
+  if (id === 'detail-pivot') renderPivot();
+}
+
+// =========================================================
+// PIVOT P001 — 三block（常规+ITcost / AGI / Rednote）
+// =========================================================
+
+// P001维度顺序
+const PIVOT_DIMS = ['bill_type_classified','provider','product','level1','level2','level3'];
+// P001值字段（6列）
+const PIVOT_VALS = [
+  'bill_payable_amount_cny',
+  'real_coupon_amount_cny',
+  'bill_coupon_amount_cny',
+  'bill_payable_amount_without_tax_cny',
+  'real_coupon_amount_without_tax_cny',
+  'bill_coupon_amount_without_tax_cny'
+];
+const PIVOT_VAL_LABELS = [
+  'payable_cny','real_coupon_cny','bill_coupon_cny',
+  'payable_notax','real_coupon_notax','bill_coupon_notax'
+];
+
+// 分类归组：常规 + ITcost -> regular；AGI -> agi；Rednote -> rednote
+function getPivotGroup(cls) {
+  if (!cls || cls === '常规') return 'regular';
+  if (cls === 'AGI') return 'agi';
+  if (cls === 'Rednote' || cls === 'rednote') return 'rednote';
+  return null; // IT费用、ITcost、特殊等不展示
+}
+
+// 构建嵌套树结构
+function buildPivotTree(rows) {
+  // node: { key, children:{}, vals:[] }
+  const root = { key: '__root__', children: {}, vals: new Array(PIVOT_VALS.length).fill(0) };
+
+  rows.forEach(r => {
+    let node = root;
+    // 累加root
+    PIVOT_VALS.forEach((f, i) => { node.vals[i] += (parseFloat(r[f]) || 0); });
+
+    PIVOT_DIMS.forEach((dim, depth) => {
+      const val = (r[dim] || '').toString().trim() || '(空)';
+      if (!node.children[val]) {
+        node.children[val] = { key: val, depth, children: {}, vals: new Array(PIVOT_VALS.length).fill(0) };
+      }
+      node = node.children[val];
+      PIVOT_VALS.forEach((f, i) => { node.vals[i] += (parseFloat(r[f]) || 0); });
+    });
+  });
+  return root;
+}
+
+// 树转扁平行列表，默认展开到depth<=1（bill_type_classified + provider）
+function flattenTree(node, depth, rows, parentId, defaultOpenDepth) {
+  if (depth < 0) {
+    // root，直接展开子节点
+    Object.values(node.children).forEach((child, idx) => {
+      flattenTree(child, 0, rows, 'root', defaultOpenDepth);
+    });
+    return;
+  }
+  const id = `pn-${Math.random().toString(36).slice(2,8)}`;
+  const hasChildren = Object.keys(node.children).length > 0;
+  const isOpen = depth < defaultOpenDepth;
+  rows.push({ id, parentId, depth, key: node.key, vals: node.vals, hasChildren, isOpen });
+  if (hasChildren) {
+    Object.values(node.children).forEach(child => {
+      flattenTree(child, depth + 1, rows, id, defaultOpenDepth);
+    });
+  }
+}
+
+// 渲染单个block的pivot table
+function renderPivotBlock(containerId, rows, accentColor) {
+  const container = document.getElementById(containerId);
+  if (!rows.length) {
+    container.innerHTML = '<div style="text-align:center;color:var(--text3);padding:24px;font-size:12px">无数据</div>';
+    return;
+  }
+
+  const tree = buildPivotTree(rows);
+  const flatRows = [];
+  flattenTree(tree, -1, flatRows, null, 2); // 默认展开到depth<2，即l0+l1
+
+  // 计算合计
+  const totals = new Array(PIVOT_VALS.length).fill(0);
+  rows.forEach(r => PIVOT_VALS.forEach((f, i) => { totals[i] += (parseFloat(r[f]) || 0); }));
+
+  const colHeaders = PIVOT_VAL_LABELS.map(l => `<th class="num">${l}</th>`).join('');
+
+  const tableRows = flatRows.map(fr => {
+    const hidden = shouldBeHidden(fr, flatRows) ? 'pivot-row-hidden' : '';
+    const toggleCls = fr.hasChildren ? (fr.isOpen ? 'pivot-toggle' : 'pivot-toggle collapsed') : '';
+    const toggleIcon = fr.hasChildren ? '<span class="toggle-icon">&#9660;</span>' : '<span style="display:inline-block;width:14px"></span>';
+    const label = fr.hasChildren
+      ? `<span class="${toggleCls}" onclick="togglePivotRow(this,'${fr.id}')">${toggleIcon}${escHtml(fr.key)}</span>`
+      : escHtml(fr.key);
+    const numCells = fr.vals.map(v => `<td class="num">${fmtNum(v)}</td>`).join('');
+    return `<tr class="pivot-row-l${fr.depth} ${hidden}" data-id="${fr.id}" data-parent="${fr.parentId||''}" data-open="${fr.isOpen}">
+      <td class="dim">${label}</td>${numCells}
+    </tr>`;
+  }).join('');
+
+  const totalCells = totals.map(v => `<td class="num">${fmtNum(v)}</td>`).join('');
+
+  container.innerHTML = `
+    <table class="pivot-table">
+      <thead>
+        <tr>
+          <th>维度</th>${colHeaders}
+        </tr>
+      </thead>
+      <tbody>
+        ${tableRows}
+        <tr class="pivot-row-total">
+          <td class="dim">合计</td>${totalCells}
+        </tr>
+      </tbody>
+    </table>`;
+}
+
+// 判断是否应该隐藏（父节点收起）
+function shouldBeHidden(fr, allRows) {
+  if (!fr.parentId || fr.parentId === 'root') return false;
+  const parent = allRows.find(r => r.id === fr.parentId);
+  if (!parent) return false;
+  if (!parent.isOpen) return true;
+  return shouldBeHidden(parent, allRows);
+}
+
+// 展开/收起pivot行
+function togglePivotRow(toggleEl, nodeId) {
+  const table = toggleEl.closest('table');
+  const tr = table.querySelector(`tr[data-id="${nodeId}"]`);
+  const isOpen = tr.getAttribute('data-open') === 'true';
+  tr.setAttribute('data-open', !isOpen);
+  toggleEl.classList.toggle('collapsed', isOpen);
+
+  // 找所有直接子行，递归处理
+  setChildrenVisibility(table, nodeId, !isOpen);
+}
+
+function setChildrenVisibility(table, parentId, parentOpen) {
+  table.querySelectorAll(`tr[data-parent="${parentId}"]`).forEach(childTr => {
+    const childOpen = childTr.getAttribute('data-open') === 'true';
+    childTr.classList.toggle('pivot-row-hidden', !parentOpen);
+    // 如果父节点关闭，子孙也要隐藏；父节点打开时，子节点是否显示取决于其自身open状态
+    if (parentOpen && childOpen) {
+      setChildrenVisibility(table, childTr.getAttribute('data-id'), true);
+    } else if (!parentOpen) {
+      setChildrenVisibility(table, childTr.getAttribute('data-id'), false);
+    }
+  });
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// 主入口：渲染三个block
+function renderPivot() {
+  const pd = getPeriod();
+
+  // 同步账期选项
+  const pivotSel = document.getElementById('pivotPeriod');
+  const periods = Object.keys(state.periods).sort();
+  pivotSel.innerHTML = '<option value="">全部账期</option>' +
+    periods.map(p => `<option value="${p}" ${state.currentPeriod===p?'selected':''}>${p}</option>`).join('');
+
+  if (!pd || !pd.mainData.length) {
+    ['pivot-regular','pivot-agi','pivot-rednote'].forEach(id => {
+      document.getElementById(id).innerHTML =
+        '<div style="text-align:center;color:var(--text3);padding:32px;font-size:12px">请先导入数据</div>';
+    });
+    ['pivot-regular-total','pivot-agi-total','pivot-rednote-total'].forEach(id => {
+      document.getElementById(id).textContent = '--';
+    });
+    return;
+  }
+
+  const pFilter = pivotSel.value;
+  let allRows = getEffectiveRows(pd);
+  if (pFilter) allRows = allRows.filter(r => (r.billing_period_str || formatPeriod(r.billing_period||r.period)) === pFilter);
+
+  // 按分类归组
+  const groups = { regular: [], agi: [], rednote: [] };
+  allRows.forEach(r => {
+    const cls = getRowClass(r, pd);
+    const g = getPivotGroup(cls);
+    if (g && groups[g]) groups[g].push(r);
+  });
+
+  // 渲染三个block
+  renderPivotBlock('pivot-regular', groups.regular);
+  renderPivotBlock('pivot-agi',     groups.agi);
+  renderPivotBlock('pivot-rednote', groups.rednote);
+
+  // 更新block合计标签
+  const fmtTotal = (rows) => {
+    const t = rows.reduce((s, r) => s + (parseFloat(r.accrual_base_cny)||0), 0);
+    return fmtNum(t) + ' accrual';
+  };
+  document.getElementById('pivot-regular-total').textContent = fmtTotal(groups.regular);
+  document.getElementById('pivot-agi-total').textContent     = fmtTotal(groups.agi);
+  document.getElementById('pivot-rednote-total').textContent = fmtTotal(groups.rednote);
+
+  document.getElementById('pivotMeta').textContent =
+    `共 ${allRows.length} 条 · 常规 ${groups.regular.length} / AGI ${groups.agi.length} / Rednote ${groups.rednote.length}`;
+}
+</script>
+</body>
+</html>
