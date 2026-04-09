@@ -730,6 +730,55 @@
 </head>
 <body>
 
+<!-- ── 密码遮罩层 ───────────────────────────────────────── -->
+<div id="authMask" style="
+  position:fixed;inset:0;z-index:99999;
+  background:#f0f2f5;
+  display:flex;align-items:center;justify-content:center;
+  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+">
+  <div style="
+    background:#fff;padding:44px 40px;border-radius:16px;
+    box-shadow:0 4px 24px rgba(0,0,0,.12);width:340px;text-align:center;
+  ">
+    <div style="font-size:22px;font-weight:600;margin-bottom:8px;color:#1a1a1a;">结算工作台</div>
+    <div style="color:#888;font-size:14px;margin-bottom:28px;">请输入访问密码</div>
+    <input id="authInput" type="password" placeholder="密码"
+      style="width:100%;padding:12px 16px;border:1px solid #ddd;border-radius:8px;
+             font-size:15px;outline:none;transition:border .2s;"
+      onkeydown="if(event.key==='Enter')checkAuth()"
+      onfocus="this.style.borderColor='#4f8ef7'"
+      onblur="this.style.borderColor='#ddd'"
+    >
+    <button onclick="checkAuth()" style="
+      margin-top:14px;width:100%;padding:12px;background:#4f8ef7;
+      color:#fff;border:none;border-radius:8px;font-size:15px;cursor:pointer;
+    ">进入</button>
+    <div id="authErr" style="margin-top:12px;color:#e53e3e;font-size:13px;min-height:20px;"></div>
+  </div>
+</div>
+<script>
+(function(){
+  var PWD = 'techchangeworld';
+  var KEY = 'wb_authed';
+  if(sessionStorage.getItem(KEY)==='1'){
+    document.getElementById('authMask').style.display='none';
+  }
+  window.checkAuth = function(){
+    var v = document.getElementById('authInput').value;
+    if(v===PWD){
+      sessionStorage.setItem(KEY,'1');
+      document.getElementById('authMask').style.display='none';
+    } else {
+      document.getElementById('authErr').textContent='密码错误，请重试';
+      document.getElementById('authInput').value='';
+      document.getElementById('authInput').focus();
+    }
+  };
+})();
+<\/script>
+<!-- ── /密码遮罩层 ────────────────────────────────────────── -->
+
 <!-- TOP BAR -->
 <div class="topbar">
   <div class="topbar-left">
